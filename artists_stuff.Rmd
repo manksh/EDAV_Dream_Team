@@ -1,0 +1,30 @@
+---
+title: "EDAV_Project"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+
+
+```{r explicit artists}
+exp_data = read_csv('/Users/mankshgupta/Desktop/Columbia/Spring2018_courses/EDAV/Project/explicit_artists.csv')
+ggplot(exp_data, aes(x = artist, y = num_exp_songs)) + geom_point()
+
+```
+
+
+
+```{r pressure}
+long_data = read_csv('/Users/mankshgupta/Desktop/Columbia/Spring2018_courses/EDAV/Project/artist_longevity.csv')
+
+long_data1 = long_data[1:25,]
+
+graph <- ggplot(data= long_data1,  aes(reorder(Artist, years, function(x){-sum(x)}), y = years)) + geom_bar(colour = 'red', fill = 'blue', stat = 'summary') + ggtitle('Artist Longevity') + xlab('Artist_name') + ylab('Years_active')
+
+print(graph) 
+
+```
