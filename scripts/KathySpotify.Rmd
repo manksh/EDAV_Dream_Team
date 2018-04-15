@@ -1,0 +1,317 @@
+---
+title: "Data Exploration"
+author: 'Kathy Lin'
+date: "March 27, 2018"
+output:
+  html_document: default
+  pdf_document: default
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE,
+                      message = FALSE, 
+                      echo=FALSE,
+                      cache = TRUE)
+```
+
+First we will import the necessary packages for exploratory analysis.
+```{r}
+library(readr)
+library(tidyverse)
+library(ggplot2)
+library(gridExtra)
+library(ggthemes)
+library(dplyr)
+library(GGally)
+library(vcd)
+library(extracat)
+library(DAAG)
+library(forcats)
+library(tibble)
+library(lubridate)
+library(skimr)
+library(plotly)
+library(parcoords)
+```
+
+Given these packages, we first do some missing value analysis and then we begin by trying to produce univariate graphs of the variables in our dataset over time. Note we've converted the song duration from ms to minutes 
+```{r}
+spotifydf <- read.csv("billboard-spotify.csv", stringsAsFactors=FALSE)
+spotifydf <- as.tibble(spotifydf)
+skimr::skim(spotifydf)
+visna(spotifydf, sort='b')
+```
+
+There seems to be 337 songs that have 15 continuous features such as acousticness, danceability, duration, energy, explicitness, etc. missing at the same time. These songs will be removed for univariate analysis. These 337 NAs were well spreadout throughout the years.
+```{r}
+spotifyNA <- spotifydf%>%
+            filter(is.na(acousticness))
+```
+
+To begin the univariate analysis, we converted duration_ms to duration in minutes for ease of comprehension.
+
+Observations: 
+
+* There is no clear overall trend in **duration** over the years
+* There is a clear decline in **acousticness** of songs over the years of our dataset
+* There is a surprising dip in **danceability** in 2010 -- Wonder what spiked in 2010 that caused this tradeoff
+* There seems to be a general upward trend seen in **energy** throughout the years but the data also shows around 3 plateaus every 20 years. 
+* There is a general decline in **instrumentalness** of songs over the years
+* There is no clear trend in **liveness** of songs over the years. Liveness does peak at 2010 though
+* There is a general upward increasing trend in **loudness** of songs over the years. There seems to be a peak around 1983 which may require further investigation why that is. Note negative scale for loudness makes sense
+* From 1965-1990, there was a pretty constant level of speechiness in songs. **Speechiness** peaks around 2000-2005 -- investigate why that is
+* Tempo remains fairly consistent around 115 during the years 1985-2005. And there is a dip in tempo in 2010.
+* Valence generally declines over the years in our dataset. America was great...back when Trump wasn't president. LOL
+
+
+
+```{r}
+# Univariate Plots
+spotifydf<-spotifydf%>%
+    filter(!is.na(duration_ms))%>%
+    mutate(duration=duration_ms/1000/60)
+
+
+### Univariate Plots
+spotifydf <- spotifydf%>%
+                group_by(year) 
+#Duration    
+spotifydf2<- spotifydf%>%
+                 summarize(average_duration = mean(duration))
+
+g1 <- ggplot(spotifydf2, aes(year, average_duration)) + geom_line() +
+    ggtitle("Average Duration over Time")+
+    ylab("Average Duration (in Minutes)")+
+    scale_y_continuous(breaks = seq(2.5, 5, .5))+
+    scale_x_continuous(breaks = seq(1960,2020,5))
+
+#Acousticness
+spotifydf3<- spotifydf%>%
+                 summarize(avg_acousticness = mean(acousticness))
+
+g2 <- ggplot(spotifydf3, aes(year, avg_acousticness)) + geom_line() +
+    ggtitle("Average Acousticness over Time")+
+    ylab("Average Acousticness")+
+    scale_x_continuous(breaks = seq(1960,2020,5))+
+    scale_y_continuous(breaks = seq(0.0, 0.5, 0.05))
+    
+#Danceability
+spotifydf4<- spotifydf%>%
+                 summarize(avg_dance = mean(danceability))
+
+g3 <- ggplot(spotifydf4, aes(year, avg_dance)) + geom_line() +
+    ggtitle("Average Danceability over Time")+
+    ylab("Average Danceability ")+
+    scale_x_continuous(breaks = seq(1960,2020,5))+
+    scale_y_continuous(breaks = seq(0.40, 0.8, 0.05))
+
+#Energy
+spotifydf5<- spotifydf%>%
+                 summarize(avg_energy = mean(energy))
+
+g4 <- ggplot(spotifydf5, aes(year, avg_energy)) + geom_line() +
+    ggtitle("Average Energy over Time")+
+    ylab("Average Energy ")+
+    scale_x_continuous(breaks = seq(1960,2020,5))+
+    scale_y_continuous(breaks = seq(0.40, 0.8, 0.05))
+
+#Instrumentalness
+spotifydf6<- spotifydf%>%
+                 summarize(avg_instrument = mean(instrumentalness))
+
+g5 <- ggplot(spotifydf6, aes(year, avg_instrument)) + geom_line() +
+    ggtitle("Average Instrumentalness over Time")+
+    ylab("Average Instrumentalness ")+
+    scale_x_continuous(breaks = seq(1960,2020,5))
+
+#Liveness
+spotifydf7<- spotifydf%>%
+                 summarize(avg_liveness = mean(liveness))
+
+g6 <- ggplot(spotifydf7, aes(year, avg_liveness)) + geom_line() +
+    ggtitle("Average Liveness over Time")+
+    ylab("Average Liveness ")+
+    scale_x_continuous(breaks = seq(1960,2020,5))+
+    scale_y_continuous(breaks = seq(0.0, 0.3, 0.02))
+
+#Loudness
+spotifydf8<- spotifydf%>%
+                 summarize(avg_loudness = mean(loudness))
+
+g7 <- ggplot(spotifydf8, aes(year, avg_loudness)) + geom_line() +
+    ggtitle("Average Loudness over Time")+
+    ylab("Average Loudness ")+
+    scale_x_continuous(breaks = seq(1960,2020,5))
+
+#Speechiness
+spotifydf9<- spotifydf%>%
+                 summarize(avg_speech = mean(speechiness))
+
+g8 <- ggplot(spotifydf9, aes(year, avg_speech)) + geom_line() +
+    ggtitle("Average Speechiness over Time")+
+    ylab("Average Speechiness ")+
+    scale_x_continuous(breaks = seq(1960,2020,5))+ 
+    scale_y_continuous(breaks = seq(0.0,0.15,0.03))
+
+#Tempo
+spotifydf10<- spotifydf%>%
+                 summarize(avg_tempo = mean(tempo))
+
+g9 <- ggplot(spotifydf10, aes(year, avg_tempo)) + geom_line() +
+    ggtitle("Average Tempo over Time")+
+    ylab("Average Tempo ")+
+    scale_x_continuous(breaks = seq(1960,2020,5))
+
+#Valence
+spotifydf11<- spotifydf%>%
+                 summarize(avg_valence = mean(valence))
+
+g10 <- ggplot(spotifydf11, aes(year, avg_valence)) + geom_line() +
+    ggtitle("Average Valence over Time")+
+    ylab("Average Valence")+
+    scale_x_continuous(breaks = seq(1960,2020,5))
+
+
+grid.arrange(g1,g2)
+grid.arrange(g3,g4) 
+grid.arrange(g5,g6)
+grid.arrange(g7,g8)
+grid.arrange(g9,g10)
+```
+Since plotting the averages gives us limited insight to the behavior of these variables over time, we now plot boxplots of their distributions over all years
+
+```{r}
+### Univariate Plots
+spotifydf <- spotifydf%>%
+                group_by(year) 
+#Duration    
+ggplot(spotifydf) + geom_boxplot(aes(year, duration, group=year))+
+    ggtitle("Duration over Time")+
+    ylab("Duration (in Minutes)")+
+    scale_x_continuous(breaks = seq(1960,2020,5))
+
+#Acousticness
+ggplot(spotifydf) + geom_boxplot(aes(year, acousticness, group=year)) +
+    ggtitle("Acousticness over Time")+
+    ylab("Acousticness")+
+    scale_x_continuous(breaks = seq(1960,2020,5))
+    
+#Danceability
+ggplot(spotifydf) + geom_boxplot(aes(year, danceability, group=year)) +
+    ggtitle("Danceability over Time")+
+    ylab("Danceability ")+
+    scale_x_continuous(breaks = seq(1960,2020,5))
+
+#Energy
+ggplot(spotifydf) + geom_boxplot(aes(year, energy, group=year)) +
+    ggtitle("Energy over Time")+
+    ylab("Energy ")+
+    scale_x_continuous(breaks = seq(1960,2020,5))
+
+#Instrumentalness
+ggplot(spotifydf) + geom_boxplot(aes(year, instrumentalness, group=year)) +
+    ggtitle("Instrumentalness over Time")+
+    ylab("Instrumentalness ")+
+    scale_x_continuous(breaks = seq(1960,2020,5))
+
+#Liveness
+ggplot(spotifydf) + geom_boxplot(aes(year, liveness, group=year)) +
+    ggtitle("Liveness over Time")+
+    ylab("Liveness ")+
+    scale_x_continuous(breaks = seq(1960,2020,5))
+
+#Loudness
+ggplot(spotifydf) + geom_boxplot(aes(year, loudness, group=year)) +
+    ggtitle("Loudness over Time")+
+    ylab("Loudness ")+
+    scale_x_continuous(breaks = seq(1960,2020,5))
+
+#Speechiness
+ggplot(spotifydf) + geom_boxplot(aes(year, speechiness, group=year)) +
+    ggtitle("Speechiness over Time")+
+    ylab("Speechiness ")+
+    scale_x_continuous(breaks = seq(1960,2020,5))
+
+#Tempo
+ggplot(spotifydf) + geom_boxplot(aes(year, tempo, group=year)) +
+    ggtitle("Tempo over Time")+
+    ylab("Tempo ")+
+    scale_x_continuous(breaks = seq(1960,2020,5))
+
+#Valence
+ggplot(spotifydf) + geom_boxplot(aes(year, valence, group=year)) +
+    ggtitle("Valence over Time")+
+    ylab("Valence")+
+    scale_x_continuous(breaks = seq(1960,2020,5))
+
+
+```
+
+## Parallel Coordinate Plots
+
+Now that we've plotted the continuous variables univariately, we'll now plot them on the same time series graph to observe patterns or correlations in their behavior. For convenience, we've rescaled the variables such that the ggparcoord graph makes sense. 
+
+```{r}
+#Define subsetted spotify df with keepcols
+keepcols <- c('year', 'acousticness', 'danceability', 'duration', 'energy', 'instrumentalness', 'liveness','loudness','speechiness', 'tempo', 'valence')
+
+spotifydf_s <- spotifydf%>%
+                select(keepcols) %>%
+                group_by(year)%>%
+                summarize(mean_acousticness = mean(acousticness), 
+                        mean_danceability = mean(danceability), 
+                        mean_duration = mean(duration), 
+                        mean_energy = mean(energy), 
+                        mean_instrumentalness = mean(instrumentalness), 
+                        mean_liveness = mean(liveness), 
+                        mean_loudness = mean(loudness), 
+                        mean_speechiness = mean(speechiness), 
+                        mean_tempo = mean(tempo), 
+                        mean_valence = mean(valence)
+                )
+# %>%
+#                 gather(key='variable', value = 'Freq', -year)
+spotifydf_s$year<- factor(spotifydf_s$year, levels = unique(spotifydf_s$year))
+
+ggparcoord(spotifydf_s, columns = 2:11, alphaLines = 0.7, groupColumn ='year',scale = 'uniminmax')+xlab("")+ylab("") + theme(axis.text.x = element_text(angle=90)) 
+
+# custom function to transpose while preserving names
+transpose_df <- function(df) {
+  t_df <- data.table::transpose(df)
+  colnames(t_df) <- rownames(df)
+  rownames(t_df) <- colnames(df)
+  return(t_df)
+}
+
+# using the function
+dft<-transpose_df(spotifydf_s)
+colnames(dft) <- dft[1, ]
+dft <- dft[-1,]
+dft<- dft%>%
+    rownames_to_column('Variable')
+
+ggparcoord(dft, columns = 2:52, alphaLines = 0.7, groupColumn ='Variable',scale = 'uniminmax')+xlab("")+ylab("") + theme(axis.text.x = element_text(angle=90)) 
+```
+
+
+We will now attempt interactive parallel coordinate plots. 
+```{r}
+#devtools::install_github("timelyportfolio/parcoords")
+
+
+spotifydf_s$year <- year(as.Date(as.character(spotifydf_s$year), "%Y"))
+
+rownames(spotifydf_s)<- spotifydf_s$year
+p <- spotifydf_s%>% arrange(year) %>%
+    parcoords(
+        rownames = F,
+        brushMode = "1D-axes",
+        reorderable = T,
+        queue = T, 
+        alpha=.8, 
+        color = list(colorBy = "year", colorScale = htmlwidgets::JS("d3.scale.category10()")), 
+        width = 1100, 
+        height = 500
+    )
+p
+
+```
