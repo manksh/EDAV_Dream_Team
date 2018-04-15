@@ -11,4 +11,4 @@ An extension of **billboard-lyrics.csv** that includes additional features queri
 Pickled dictionary containing credentials needed to query Spotify's API.
 
 #### failed.csv
-Dataset of songs from **billboard-lyrics.csv** that werenot successfuly queried on Spotify's API.
+Dataset of songs from **billboard-lyrics.csv** that were not successfuly queried on Spotify's API.

@@ -1,0 +1,7 @@
+data/.DS_Store
+data/spotify-clean.csv
+data/tidy-words.csv
+
+scripts/.cache-zhao1701
+scripts/.ipynb_checkpoints/
+scripts/__pycache__
