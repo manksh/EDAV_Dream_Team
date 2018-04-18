@@ -1,0 +1,75 @@
+---
+title: "EDAV_project_Louis"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tm)
+library(dplyr)
+library(wordcloud)
+library(ggplot2)
+```
+
+```{r}
+n_gram <- read.csv("../data/Louis/n_gram.csv")
+pal <- brewer.pal(9, "OrRd")
+pal <- pal[-(1:3)]
+```
+
+Word cloud with most popular unigrams, bigrams and trigrams by decade:
+```{r}
+for (i in 0:5){
+n_gram_i <- filter(n_gram, n_gram$decade == 1960+10*i)
+wordcloud(n_gram_i$word, n_gram_i$count, min.freq =3, scale=c(5, .2), random.order = FALSE, random.color = FALSE, colors= pal)}
+```
+Word cloud with most popular unigrams by decade:
+```{r}
+for (i in 0:5){
+n_gram_i <- filter(n_gram, n_gram$decade == 1960+10*i, n_gram$gram == 'unigram')
+wordcloud(n_gram_i$word, n_gram_i$count, min.freq =3, scale=c(5, .2), random.order = FALSE, random.color = FALSE, colors= pal)}
+```
+
+Word cloud with most popular bigrams by decade:
+```{r}
+for (i in 0:5){
+n_gram_i <- filter(n_gram, n_gram$decade == 1960+10*i, n_gram$gram == 'bigram')
+wordcloud(n_gram_i$word, n_gram_i$count, min.freq =3, scale=c(5, .2), random.order = FALSE, random.color = FALSE, colors= pal)}
+```
+
+Word cloud with most popular trigrams by decade:
+```{r}
+for (i in 0:5){
+n_gram_i <- filter(n_gram, n_gram$decade == 1960+10*i, n_gram$gram == 'trigram')
+wordcloud(n_gram_i$word, n_gram_i$count, min.freq =3, scale=c(5, .2), random.order = FALSE, random.color = FALSE, colors= pal)}
+```
+Number of covers per year:
+```{r}
+bin_width <- 1
+cover <- read.csv("../data/Louis/cover_year.csv")
+ggplot(cover, aes(year)) +
+  geom_histogram(color = "black", fill = "lightblue", binwidth = bin_width) +
+  theme(legend.position="bottom") +
+  ggtitle("Cover") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  xlab("Year") + 
+  ylab("Count")
+```
+
+Evolution of word count per year:
+```{r}
+word1 <- 'like'
+word2 <- 'love'
+word_count <- read.csv("../data/Louis/word_count_per_year.csv")
+data_love = filter(word_count, word_count$word == word1 | word_count$word == word2)
+ggplot(data_love, aes(x = year, y = count, col = word)) +
+  geom_line() +
+  theme(legend.position="bottom") +
+  ggtitle("Love/Like") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  xlab("Year") + 
+  ylab("Count")
+```
