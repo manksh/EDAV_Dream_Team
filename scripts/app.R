@@ -33,12 +33,11 @@ ui <- dashboardPage(
                         sidebarPanel(
                             h3('What information about artists are you interested in?'),
                             selectInput("artists", label = h5("Select:"), choices = c("Artist Lifespan" =  "relevance",
-                                                                                      "Most Collaborative Artists" = "collaboration",
-                                                                                      "Most Verbose Artists" = "verbose"
+                                                                                      "Most Collaborative Artists" = "collaboration"
                             ),c('Artist Lifespan')),
                             hr(),
                             helpText("The dropdown menu above contains three interesting aspects of the artists that have appeared in the Billboard Top 100 that we have investigated. 
-                                     You can look at an artist's lifespan, the most collaborative artists, or the most verbose artists. All analyses are computed over 1965-2015."),
+                                     You can look at an artist's lifespan or the most collaborative artists.All analyses are computed over 1965-2015."),
                             
                             br()),
                         mainPanel(
@@ -47,10 +46,9 @@ ui <- dashboardPage(
                             hr(),
                             #plotOutput("artistlifespan"), # Note that artistlifespan should appear as a reactive in server
                             hr(),
-                            #plotOutput("dygraph2_ft"),
+                            #plotOutput("collaborative"),
                             hr()
-                            #,
-                            #plotlyOutput('plttest_ft')
+
                         )
                         )),
             #### WORDS ANALYSIS DASHBOARD
