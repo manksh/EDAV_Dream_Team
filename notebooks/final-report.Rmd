@@ -140,19 +140,25 @@ We present this exploratory data analysis in four sections as outlined in the in
 ### Artists
 In this subsection, we examine the data at the artist level to answer some basic initial questions.
 
-```{r}
+```{r, fig.width=10, fig.height=5}
 top_artists = df %>%
                 group_by(artist_base) %>%
                 summarize(num_singles = n()) %>%
                 arrange(desc(num_singles))
-top_artists = top_artists[0:30,]
-ggplot(top_artists, aes(x = reorder(artist_base, num_singles), y = num_singles)) +
+top_artists_30 = top_artists[0:30,]
+ggplot(top_artists_30, aes(x = reorder(artist_base, num_singles), y = num_singles)) +
     geom_col() + 
     coord_flip() +
     xlab('Artist') +
     ylab('Number of yearly top 100 singles from 1965-2015') +
     labs(title = 'Who are the most popular artists of the past 50 years?')
 ```
+```{r, fig.height=5, fig.width=10}
+p1 = ggplot(top_artists) + geom_histogram(aes(x = num_singles), bins=35)
+p2 = ggplot(top_artists) + geom_histogram(aes(x = num_singles, y = cumsum(..count.. / sum(..count..))), bins=35)
+grid.arrange(p1, p2, nrow=2)
+```
+
 ```{r}
 most_explicit_artists = df %>%
                 group_by(artist_base) %>%
@@ -218,6 +224,7 @@ collaborations = df %>%
                     summarize(num_collaborations = sum(is_collab))
 ggplot(collaborations, aes(x = year, y = num_collaborations)) +
     geom_line() +
+    geom_point() + 
     xlab('Year') +
     ylab('Number of top 100 singles featuring a guest artist')
 ```
@@ -232,10 +239,26 @@ nunique_artists_year = df %>%
 options(repr.plot.width = 16, repr.plot.height = 6)
 ggplot(nunique_artists_year, aes(x = year, y = nunique), fill='black') + 
     geom_line() + 
+    geom_point() + 
     ylab('Number of unique artists')
 ```
 
 The plot above shows artist diversity over time, with diversity defined not on the basis of race but on the number of unique artists with top 100 singles each year. The trend depicted shows a mixed picture; the most diverse year is in the early 1970s while the least diverse is in 2009 and 2010, yet the pattern remains noisy enough that more years are needed before making a more solid determination.
+
+```{r, fig.width=10, fig.height=10}
+top_artists = df %>%
+                group_by(artist_base) %>%
+                summarize(num_singles = n(), earliest_hit = min(year), latest_hit = max(year), longevity = latest_hit - earliest_hit, hits_per_year = num_singles / longevity) %>%
+                arrange(desc(longevity))
+top_artists_30 = top_artists[0:30,]
+
+ggplot(top_artists_30) + geom_segment(aes(x=earliest_hit, xend=latest_hit, y=reorder(artist_base, longevity), yend=reorder(artist_base, longevity), color=num_singles), size=5) + geom_text(aes(x=latest_hit + 3, y=reorder(artist_base, longevity), label=paste(longevity, 'years'))) + ggtitle('Career spans of most timeless artists')
+```
+
+```{r}
+ggplot(top_artists, aes(x = longevity, y = hits_per_year, color = num_singles)) + geom_point(alpha=0.25)
+```
+
 
 ### Audio features
 
