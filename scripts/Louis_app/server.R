@@ -1,22 +1,25 @@
-library(tm)
-library(wordcloud)
-library(memoise)
-
-# The list of valid n-grams
-grams <<- list("N-grams" = "n-grams",
-               "Unigrams" = "unigram",
-               "Bigrams" = "bigram",
-               "Trigrams" = "trigram")
-
-# Using "memoise" to automatically cache the results
-getN_gram <- memoise(function(gram) {
-  if (!(gram %in% grams))
-    stop("Unknown category")
+function(input, output, session) {
+  # Define a reactive expression for the document term matrix
+  terms <- reactive({
+    # Change when the "update" button is pressed...
+    input$update
+    # ...but not for anything else
+    isolate({
+      withProgress({
+        setProgress(message = "Processing corpus...")
+        getN_gram(input$selection, input$decade)
+      })
+    })
+  })
   
-  n_gram <- read.csv("../../data/Louis/n_gram.csv")
-  if (gram == "n-grams") {
-    n_gram_filtered <- filter(n_gram, n_gram$decade == 1960+10*i)
-  } else {
-    n_gram_filtered <- filter(n_gram, n_gram$decade == 1960+10*i, n_gram$gram == gram)
-  }
-})
+  # Make the wordcloud drawing predictable during a session
+  #wordcloud_rep <- repeatable(wordcloud)
+  
+  output$plot <- renderPlot({
+    v <- terms()
+    pal <- brewer.pal(9, "OrRd")
+    pal <- pal[-(1:3)]
+    wordcloud(v$word, v$count, scale=c(5, 0.2), min.freq=3, random.order = FALSE , random.color = FALSE,
+              rot.per=.15, colors=pal)
+  })
+}

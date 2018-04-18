@@ -8,14 +8,10 @@ fluidPage(
       selectInput("selection", 
                   "Choose your n-gram range:",
                   choices = grams),
-      actionButton("update", "Change"),
-      hr(),
-      sliderInput("freq",
-                  "Minimum Frequency:",
-                  min = 1,  max = 50, value = 1)
+      selectInput("decade", "Choose your decade:", choices = decades),
+      actionButton("update", "Change")
     ),
     
-    # Show Word Cloud
     mainPanel(
       plotOutput("plot")
     )
