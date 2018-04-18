@@ -13,18 +13,18 @@ library(tidyverse)
 library(ggplot2)
 library(gridExtra)
 library(stringr)
-library(ggthemes)
-library(dplyr)
-library(GGally)
-library(vcd)
-library(extracat)
-library(DAAG)
-library(forcats)
-library(tibble)
-library(lubridate)
-library(skimr)
-library(plotly)
-library(parcoords)
+#library(ggthemes)
+#library(dplyr)
+#library(GGally)
+#library(vcd)
+#library(extracat)
+#library(DAAG)
+#library(forcats)
+#library(tibble)
+#library(lubridate)
+#library(skimr)
+#library(plotly)
+#library(parcoords)
 ```
 
 
@@ -109,12 +109,6 @@ One significant problem we noticed in the lyric text is that some lyrics were no
 
 A cursory visual inspection shows that this problem does not apply to all lyrics, yet estimating the number of songs affected much less addressing this issue is beyond the scope of this project. Had time permitted, we would have processed the text using an NLP package to detect "out of vocabulary" words to gauge the extent of this issue.
 
-```{r}
-
-# some code displaying a random selection of lyrics
-
-```
-
 A more tractable problem in the data is that some songs may become popular near the end of a year and remain popular through the beginning of the following year, resulting in 201 songs with a duplicate.
 
 ```{r}
@@ -169,11 +163,6 @@ ggplot(top_artists_30, aes(x = reorder(artist_base, num_singles), y = num_single
     labs(title = 'Who are the most popular artists of the past 50 years?')
 ```
 
-```{r, fig.height=5, fig.width=10}
-p1 = ggplot(top_artists) + geom_histogram(aes(x = num_singles), bins=35)
-p2 = ggplot(top_artists) + geom_histogram(aes(x = num_singles, y = cumsum(..count.. / sum(..count..))), bins=35)
-grid.arrange(p1, p2, nrow=2)
-```
 
 ```{r}
 most_explicit_artists = df %>%
@@ -502,3 +491,123 @@ In this subsection, we perform analyses on the words within the lyrics of each s
 words = read_csv('../data/tidy-words.csv')
 ```
 
+# Executive Summary
+
+[ Probably needs some introductory text here ]
+
+[ On further thought, I think we should exclude the dendrogram heatmap from the executive summary. It looks cool, but is more helpful as an exploratory tool rather than a storytelling tool. ]
+
+[ Feel free to change the sub-headings if you think they're too whimsical ]
+
+### Flash in the pan vs. steady burn
+
+[ Expand on comments from main report, fix labels on axes and legend ]
+
+```{r, fig.width=10, fig.height=8}
+top_artists = df %>%
+                group_by(artist_base) %>%
+                summarize(num_singles = n(), earliest_hit = min(year), latest_hit = max(year), longevity = latest_hit - earliest_hit, hits_per_year = num_singles / longevity) %>%
+                arrange(desc(longevity))
+top_artists_30 = top_artists[0:30,]
+
+ggplot(top_artists_30) + geom_segment(aes(x=earliest_hit, xend=latest_hit, y=reorder(artist_base, longevity), yend=reorder(artist_base, longevity), color=num_singles), size=5) + geom_text(aes(x=latest_hit + 3, y=reorder(artist_base, longevity), label=paste(longevity, 'years'))) + ggtitle('Career spans of most timeless artists')
+```
+
+```{r, fig.width=10, fig.height=3}
+p1 = ggplot(top_artists, aes(x = longevity, y = hits_per_year, color = num_singles)) + geom_point(alpha=0.25)
+p2 = ggplot(top_artists) + geom_histogram(aes(x=num_singles, y=cumsum(..count../sum(..count..))), bins=31)
+
+grid.arrange(p1, p2, ncol=2)
+
+```
+
+[ expand on comments from main report, fix labels on axes and legend ]
+
+### Pay attention to me!
+
+[ introduce how this subsection examines trends revealing an increasingly competitive music market (due to fewer record sales and cheap music making software) where artists are trying harder to hold listener's attention ]
+
+```{r, fig.width=10, fig.height=5}
+p1 = ggplot(df, aes(x=energy, y=loudness, color=year)) +
+    geom_point(alpha=0.5) +
+    ggtitle('Energy vs. loudness')
+
+p2 = ggplot(df, aes(x=energy, y=loudness)) +
+    geom_point(alpha=0.15) +
+    facet_wrap(~ decade)
+
+grid.arrange(p2, p1, ncol = 2)
+```
+
+[ can Google "Loudness Wars" for a good story here ]
+
+[for below, consider redoing scale limits to remove outliers]
+
+```{r, fig.width=10, fig.height=5}
+p1 = ggplot(df, aes(x=instrumentalness, y=duration_min, color=year)) +
+    geom_point(alpha=0.5)
+
+p2 = ggplot(df, aes(x=instrumentalness, y=duration_min)) +
+    geom_point(alpha=0.15) +
+    facet_wrap(~ decade)
+
+grid.arrange(p2, p1, ncol = 2)
+```
+
+[ song durations are becoming less variable and shorter while instrumentalness has also been declining. this can also be related to the ongoing struggle to hold on to people's attention (we now have greater access to a larger collection of music than ever before and can easily get bored) ]
+
+[ the decline in instrumentalness could have two causes: 1) shorter songs mean less time for instruemntal intros or mid-song interludes and 2) a general decline in instruemntal music. i think you found an article talking about the latter point. there's also plenty of material online about songs getting shorter ]
+
+### Bleep Bleepin' Bleep
+
+[ introduce how a number of observed trends correlate to the rise of rap and hip hop. might be helpful to cite some sources detailing when exactly these genres became popular. ]
+
+```{r, fig.width=10, fig.height=5}
+p1 = ggplot(df, aes(x=words_per_sec, y=speechiness, color=year)) +
+    geom_point(alpha=0.5)
+
+p2 = ggplot(df, aes(x=words_per_sec, y=speechiness)) +
+    geom_point(alpha=0.15) +
+    facet_wrap(~ decade)
+
+grid.arrange(p2, p1, ncol = 2)
+```
+
+[ comment on increase in verbosity and speechiness over time. one of the hallmarks of rap is its insane word density. ]
+
+```{r, }
+explicit = df %>% 
+           group_by(year) %>%
+           summarize(prop_explicit = sum(explicit, na.rm=TRUE))
+
+ggplot(explicit, aes(x = year, y = prop_explicit), fill='black') + 
+    geom_line() + 
+    geom_point() + 
+    ylab('Number of explicit songs')
+```
+
+[ comment on increase in explicit songs. can also use grid.arrange to combine with Louis' plot showing the rise in specific explicit words (bitch, ass, fuck, among others) ]
+
+[ can also copy Louis' word cloud showing the most explicit words. the fact that "feds/cops" and some other not intrinsically explicit words shows up is fascinating. will need to re-summarize how a word's explicitness is calcualted (i.e. re-hash the process for creating "tidy words" dataset). ]
+
+### Love conquers all (but is it forever?)
+
+[ Louis' word cloud for most frequently used words ]
+
+[ Louis' line plot for love vs. like ]
+
+### Odds and ends
+
+[ Kathy's parallel coordinates plot ]
+
+[ Louis' word clouds for most danceable, most energetic, etc. words ]
+
+### Conclusion
+
+[ I hate writing conclusions, so good luck! ]
+
+[ We should probably mention again the problem we encountered with fused words and how if we had more time (and could do this project in Python) we would have been able to use an NLP package to tag out of vocabulary words to estimate the extent of the issue. ]
+
+[ Using the tidy words transformation and averaging the audio features by word is a very heuristic method of calculating features like "danceability" for each word. A cooler method would have been to convert each song's lyrics to bag-of-words data and trained multiple linear regressions using the lyrics to predict the song's audio feature (i.e. one regression model for danceability, one regression model for energy, etc.). We could then use the coefficients from the linear regression to tell us what the most and least danceable/energetic/loud/acoustic/etc. words were. If we had more time (or again, if we had been allowed to perform this project in Python), we could have gone down this direction. ]
+
+[ THANK YOU SOOOOOOO MUCH! =) ]
