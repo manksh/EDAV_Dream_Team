@@ -14,6 +14,27 @@ spotifydf<-spotifydf%>%
 spotifydf <- spotifydf%>%
     group_by(year) 
 
+#Define subsetted spotify df with keepcols
+keepcols <- c('year', 'acousticness', 'danceability', 'duration', 'energy', 'instrumentalness', 'liveness','loudness','speechiness', 'tempo', 'valence')
+
+spotifydf_s <- spotifydf%>%
+    select(keepcols) %>%
+    group_by(year)%>%
+    summarize(acoustic = mean(acousticness), 
+              danceability = mean(danceability), 
+              duration = mean(duration), 
+              energy = mean(energy), 
+              instrument = mean(instrumentalness), 
+              liveness = mean(liveness), 
+              loudness = mean(loudness), 
+              speechiness = mean(speechiness), 
+              tempo = mean(tempo), 
+              valence = mean(valence)
+    )
+# %>%
+#                 gather(key='variable', value = 'Freq', -year)
+spotifydf_s$year<- factor(spotifydf_s$year, levels = unique(spotifydf_s$year))
+
 ##############UI ########################
 ui <- dashboardPage(
     dashboardHeader(title = "DreamTeam Final Project"),
@@ -22,9 +43,11 @@ ui <- dashboardPage(
             menuItem("Artists", tabName = "dashboard1"),
             menuItem("Songs", tabName = "dashboard2"),
             menuItem("Evolution over Time", tabName = "dashboard3")
+        # checkboxGroupInput("Tabs", label= h4("interactive"), choices = list('tabs'='tabs'),selected=NULL)
         )
     ),
     dashboardBody(
+        # uiOutput("ui"),
         tabItems(
             
             ### ARTISTS DASHBOARD
@@ -91,6 +114,9 @@ ui <- dashboardPage(
                                                                                       "Valence" = "valence"
                                                                                       ),c('Duration')),
                             hr(),
+                            checkboxGroupInput("Tabs", label= h4("Interactive"), choices = list('Parallel Coordinates'='parcoord'),selected=NULL),
+                            helpText("Note: It may be necessary to maximize the dashboard window to visualize the parallel coordinates fully. Also note that the years have an
+additional comma."),
                             # helpText("Continuous variables within Billboard Top 100 include: Duration, Acousticness, Danceability
                             #          , Energy, Instrumentalness, Liveness, Loudness, Speechiness, Tempo, and Valence"),
                         
@@ -98,6 +124,14 @@ ui <- dashboardPage(
                         
                         
                         mainPanel(
+                            conditionalPanel(
+                                condition = "input.Tabs=='parcoord'",
+                                tabBox(
+                                    title = "Variables Tracked between 1965-2015",
+                                    id="ttabs", width = 15, height = "300px",
+                                    parcoordsOutput('parcoordvar', width=750, height = "300px")
+                                )),
+                            # uiOutput("ui"),
                             h2('Evolution of Music Between 1965-2015'),
                             hr(),
                             plotOutput('evolution1'),
@@ -120,6 +154,22 @@ server <- function(input, output) {
     
     ####################
     #Dashboard 3 graphs
+    #Parallel Coordinate Graph
+    spotifydf_s$year <- year(as.Date(as.character(spotifydf_s$year), "%Y"))
+    rownames(spotifydf_s)<- spotifydf_s$year
+    
+    output$parcoordvar = renderParcoords(
+        spotifydf_s%>% arrange(year) %>%
+            parcoords(
+                rownames = F,
+                brushMode = "1D-axes",
+                reorderable = T,
+                queue = T, 
+                alpha=.8, 
+                color = list(colorBy = "year", colorScale = htmlwidgets::JS("d3.scale.category10()")), 
+                height = 300
+            )
+    )
     #Line Graphs
     output$evolution1 <- renderPlot({
         if(input$variable=="duration"){
@@ -186,7 +236,7 @@ server <- function(input, output) {
                 xlab("Year")+
                 scale_x_continuous(breaks = seq(1960,2020,5))+
                 scale_y_continuous(breaks = seq(0.0, 0.3, 0.02))
-            g7
+            g6
         } else if (input$variable=="loudness") {
             spotifydf8<- spotifydf%>%
                 summarize(avg_loudness = mean(loudness))
@@ -197,7 +247,7 @@ server <- function(input, output) {
                 xlab("Year")+
                 scale_x_continuous(breaks = seq(1960,2020,5))
             
-            g8
+            g7
         } else if (input$variable=="speechiness") {
             spotifydf9<- spotifydf%>%
                 summarize(avg_speech = mean(speechiness))
