@@ -8,18 +8,29 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r}
+library(readr)
 library(tidyverse)
-library(stringr)
 library(ggplot2)
-library(repr)
 library(gridExtra)
+library(ggthemes)
+library(dplyr)
+library(GGally)
+library(vcd)
+library(extracat)
+library(DAAG)
+library(forcats)
+library(tibble)
+library(lubridate)
+library(skimr)
+library(plotly)
+library(parcoords)
 ```
 
 
 # Introduction
 ### Team
 - **Manksh Gupta** (mg3835): exporatory data analysis, visualization (static plots), research
-- **Kathy Lin**: exploratory data analysis, visualization (static and Shiny plots) 
+- **Kathy Lin**: exploratory data analysis, visualization (static and Shiny dashboard) 
 - **Louis Massera** (lm3287): exploratory data analysis, visualization (static plots)
 - **Chong Zhao** (cz2470): data processing, exploratory data analysis, visualization (static plots), writing final report
 
@@ -74,8 +85,11 @@ Source: [Spotify API](https://developer.spotify.com/web-api/get-audio-features/)
 
 ```{r}
 # skimr output
+spotifydf <- as.tibble(df)
+skimr::skim(spotifydf)
+#visna plot
+visna(spotifydf, sort='b')
 
-# visna plot
 ```
 
 From above, we are fortunate to find no significant problems with the numerical features (i.e. values with ranges that do not make sense). However, there are 337 songs that have missing values for all Spotify features due to the fact that these songs were queried unsuccessfully. The plot below shows that the missingness of these features is mostly uncorrelated with the year in which the song charted.
