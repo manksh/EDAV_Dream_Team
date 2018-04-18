@@ -12,6 +12,7 @@ library(readr)
 library(tidyverse)
 library(ggplot2)
 library(gridExtra)
+library(stringr)
 library(ggthemes)
 library(dplyr)
 library(GGally)
@@ -167,6 +168,7 @@ ggplot(top_artists_30, aes(x = reorder(artist_base, num_singles), y = num_single
     ylab('Number of yearly top 100 singles from 1965-2015') +
     labs(title = 'Who are the most popular artists of the past 50 years?')
 ```
+
 ```{r, fig.height=5, fig.width=10}
 p1 = ggplot(top_artists) + geom_histogram(aes(x = num_singles), bins=35)
 p2 = ggplot(top_artists) + geom_histogram(aes(x = num_singles, y = cumsum(..count.. / sum(..count..))), bins=35)
@@ -257,7 +259,7 @@ ggplot(nunique_artists_year, aes(x = year, y = nunique), fill='black') +
     ylab('Number of unique artists')
 ```
 
-The plot above shows artist diversity over time, with diversity defined not on the basis of race but on the number of unique artists with top 100 singles each year. The trend depicted shows a mixed picture; the most diverse year is in the early 1970s while the least diverse is in 2009 and 2010, yet the pattern remains noisy enough that more years are needed before making a more solid determination.
+The plot above shows artist diversity over time, with diversity defined not on the basis of race but on the number of unique artists with top 100 singles each year. The trend depicted shows a mixed picture; the most diverse year is in the early 1970s while the least diverse is in 2009 and 2010, yet the pattern remains noisy enough that more years are needed before making a more confident determination.
 
 ```{r, fig.width=10, fig.height=10}
 top_artists = df %>%
@@ -269,8 +271,23 @@ top_artists_30 = top_artists[0:30,]
 ggplot(top_artists_30) + geom_segment(aes(x=earliest_hit, xend=latest_hit, y=reorder(artist_base, longevity), yend=reorder(artist_base, longevity), color=num_singles), size=5) + geom_text(aes(x=latest_hit + 3, y=reorder(artist_base, longevity), label=paste(longevity, 'years'))) + ggtitle('Career spans of most timeless artists')
 ```
 
+Besides just revealing which artists had the most top 100 hit singles, one of the more interesting aspects of the data is that it allows us to see which artists had the greatest longevity of career, defined simply as number of years between an artist's earliest charting hit and most recent charting hit. A caveat here is that because the latest of any duplicate singles was removed from the dataset, some artists' career lifespans appear shorter by a year than if duplicates singles had not been removed.
+
+Above, we not only observe which artists had the greatest career longevity but also the time period during which an artist was popular, with lighter colors signifying an artist with greater numbers of total hit singles. Curiously, while Madonna and Mariah Carey have charted most frequently in the top 100, several artists, Santana, Cher, The Isley Brothers, Aretha Franklin, etc., have had longer charting careers.
+
+This raises a natural question: does there exist a relationship between the number of singles an artist produces per year and their career span? Below, we observe that no artist has produced an average of greater than 2 hit singles a year and achieved a career span exceeding a decade. In fact, all artists generating on avearage more than 2.5 hit singles per year have career spans of less than 5 years, with the most significant "flash in the pan" artists being those that averaged 4 or more hit singles per year.
+
 ```{r}
 ggplot(top_artists, aes(x = longevity, y = hits_per_year, color = num_singles)) + geom_point(alpha=0.25)
+```
+
+However, being a "flash in the pan" artist with multiple hit singles over a short span of time might still be preferable to the fates of the majority of charting artists. In the cumulative relative frequency histogram below, we see that over half of all artists only ever generate a single hit, and over 3/4ths of artists ever generate at most 2 hits.
+
+```{r, fig.height=3, fig.width=10}
+p1 = ggplot(top_artists) + geom_histogram(aes(x=num_singles))
+p2 = ggplot(top_artists) + geom_histogram(aes(x=num_singles, y=cumsum(..count../sum(..count..))))
+
+grid.arrange(p1, p2, ncol=2)
 ```
 
 
@@ -412,7 +429,7 @@ heatmap(x = correlation, col = col, symm = TRUE)
 
 **Note**: This heatmap below was originally created in Python using the Seaborn visualization library. In translating the visualization to R using R's heatmap functionality, we were unable to produce a legend nor annotate the grid cells individually. We present this second, more ideal heatmap as an image in addition to the one created in R above.
 
-![stuff](../imgs/correlation-heatmap.png)
+![](../imgs/correlation-heatmap.png)
 
 The dendrogrammed correlation heatmap reveals some interesting aspects of the data's correlation structure:
 
