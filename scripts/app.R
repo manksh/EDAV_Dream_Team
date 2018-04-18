@@ -106,7 +106,6 @@ ui <- dashboardPage(
                             textOutput('evolution2'),
                             hr(),
                             plotOutput('evolution3')
-                            # DT::dataTableOutput('theDT_ag')
                         )
                     ))
         )
