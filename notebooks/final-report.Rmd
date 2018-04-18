@@ -1,0 +1,450 @@
+---
+title: "An Analysis of the Top 100 Hit Singles from the Past 50 Years"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(stringr)
+library(ggplot2)
+library(repr)
+library(gridExtra)
+```
+
+
+# Introduction
+### Team
+- **Manksh Gupta** (mg3835): exporatory data analysis, visualization (static plots), research
+- **Kathy Lin**: exploratory data analysis, visualization (static and Shiny plots) 
+- **Louis Massera** (lm3287): exploratory data analysis, visualization (static plots)
+- **Chong Zhao** (cz2470): data processing, exploratory data analysis, visualization (static plots), writing final report
+
+### Motivation
+Popular music offers a unique lens through which to study how a culture evolves. It allows us to mine insights about what preoccupies a society, what it values in its entertainment, and how its preferences change with each generation. Because an analysis of "all mainstream music" is beyond the practical scope of this class, we limit our view to only the 100 most popular songs for each of the past 50 years.
+
+To enable our analysis, we turn to one of the world's most popular streaming music providers, Spotify, which not only contains a comprehensive catalog of mainstream songs but also a database of proprietary data describing various auditory features of each song. In addition to these auditory features, another rich source of data is the lyrics of the songs themselves, which when combined with Spotify's audio features, paints a vivid portrait of a changing musical landscape. Specifically, we seek to explore questions relating to the following themes:
+
+- **Artists** (most popular, longevity, most explicit, most danceable, most collaborative, etc.)
+- **Words** (most frequent, usage over time, relationship to audio features)
+- **Audio features** (evolution over time)
+
+# Data description
+
+For this analysis, we focus primarily on the US music market and use Billboard's Yearly Top 100 chart as our means of determining the most popular singles for each year. Billboard is a weekly music news magazine that publishes a weekly chart of the top 100 songs sold each week. This weekly chart is considered the industry standard for measuring the success of commercial music and serves as the basis for compiling the Yearly Top 100 chart. This yearly chart starts the first week of December to the last week in November of each year. A single gains points on the yearly chart for each weekly chart it appears on, with a weekly position of 100 yielding a single point and a position of 1 yielding 100 points ([source: billboardtop100of.com](http://billboardtop100of.com/billboard-top-100-year-end-chart/)).
+
+### Data acquisition
+Because it is not possible to obtain Billboard's chart data and corresponding song lyrics without some form of extensive web scraping, we opted instead to use a [dataset compiled by Kaylin Walker](https://github.com/walkerkq/musiclyrics) consisting of the yearly top 100 singles and their lyrics from 1965-2015. However, our primary data, Spotify's audio features, was accessed directly by querying Spotify's API using the obtained list of top 100 singles, the Python script for which can be found [here](https://github.com/manksh/EDAV_Dream_Team/blob/master/scripts/query-spotify.py). We then merge these features back into the Billboard dataset, as detailed [here](https://github.com/manksh/EDAV_Dream_Team/blob/master/scripts/query-spotify.ipynb).
+
+```{r}
+df = read_csv('../data/billboard-spotify.csv')
+colnames(df)
+```
+
+### Description of relevant features
+
+The dataset consisting of merged Billboard and Spotify data contains a 5100 rows, one for each song, each with the following features:
+
+- **rank**: The rank of the song in its Yearly Top 100 chart, with $1$  being the highest and $100$ being the lowest.
+- **song**: The song's name.
+- **artist**: The song's artist.
+- **year**: The year in which the song placed in the Yearly Top 100 chart.
+- **lyrics**: The lyrics for that song.
+- **acousticness**: A confidence measure from 0.0 to 1.0 of whether the track is acoustic. 1.0 represents high confidence the track is acoustic.
+- **danceability**: Describes how suitable a track is for dancing based on a combination of musical elements including tempo, rhythm stability, beat strength, and overall regularity. A value of 0.0 is least danceable and 1.0 is most danceable.
+- **duration_ms**: Length of the song in milliseconds.
+- **energy**: A measure from 0.0 to 1.0 and represents a perceptual measure of intensity and activity. Typically, energetic tracks feel fast, loud, and noisy. For example, death metal has high energy, while a Bach prelude scores low on the scale.
+- **explicit**: Binary variable with $0$ indicating a non-explicit song and $1$ indicating an explicit song.
+- **instrumentalness**: Predicts whether a track contains no vocals. "Ooh" and "aah" sounds are treated as instrumental in this context. Rap or spoken word tracks are "vocal". The closer the instrumentalness value is to 1.0, the greater likelihood the track contains no vocal content. Values above 0.5 are intended to represent instrumental tracks, but confidence is higher as the value approaches 1.0.
+- **liveness**: Detects the presence of an audience in the recording. Higher liveness values represent an increased probability that the track was performed live. A value above 0.8 provides strong likelihood that the track is live.
+- **loudness**: The overall loudness of a track in decibels (dB). Loudness values are averaged across the entire track and are useful for comparing relative loudness of tracks. Loudness is the quality of a sound that is the primary psychological correlate of physical strength (amplitude). Values typical range between -60 and 0 db.
+- **mode**: Mode indicates the modality (major or minor) of a track, the type of scale from which its melodic content is derived. Major is represented by 1 and minor is 0.
+- **popularity**: A measure between 0 and 1 indicating how many times that song has been streamed.
+- **speechiness**: Detects the presence of spoken words in a track. The more exclusively speech-like the recording (e.g. talk show, audio book, poetry), the closer to 1.0 the attribute value. Values above 0.66 describe tracks that are probably made entirely of spoken words. Values between 0.33 and 0.66 describe tracks that may contain both music and speech, either in sections or layered, including such cases as rap music. Values below 0.33 most likely represent music and other non-speech-like tracks
+- **tempo**: The overall estimated tempo of a track in beats per minute (BPM). In musical terminology, tempo is the speed or pace of a given piece and derives directly from the average beat duration.
+- **time_signature**: An estimated overall time signature of a track. The time signature (meter) is a notational convention to specify how many beats are in each bar (or measure).
+- **valence**: A measure from 0.0 to 1.0 describing the musical positiveness conveyed by a track. Tracks with high valence sound more positive (e.g. happy, cheerful, euphoric), while tracks with low valence sound more negative (e.g. sad, depressed, angry).
+
+Source: [Spotify API](https://developer.spotify.com/web-api/get-audio-features/)
+
+# Analysis of data quality
+
+```{r}
+# skimr output
+
+# visna plot
+```
+
+From above, we are fortunate to find no significant problems with the numerical features (i.e. values with ranges that do not make sense). However, there are 337 songs that have missing values for all Spotify features due to the fact that these songs were queried unsuccessfully. The plot below shows that the missingness of these features is mostly uncorrelated with the year in which the song charted.
+
+```{r}
+na_years = df %>%
+    filter(is.na(acousticness)) %>%
+    select(year)
+ggplot(na_years, aes(x=year)) + geom_histogram(bins=51)
+```
+
+One significant problem we noticed in the lyric text is that some lyrics were not scraped properly; for certain songs, there exists no demarcation between the final word of a line and the first word of the next line, resulting in merged words such as:
+
+- else + in = elsein
+- downtown + just = downtownjust
+
+A cursory visual inspection shows that this problem does not apply to all lyrics, yet estimating the number of songs affected much less addressing this issue is beyond the scope of this project. Had time permitted, we would have processed the text using an NLP package to detect "out of vocabulary" words to gauge the extent of this issue.
+
+```{r}
+
+# some code displaying a random selection of lyrics
+
+```
+
+A more tractable problem in the data is that some songs may become popular near the end of a year and remain popular through the beginning of the following year, resulting in 201 songs with a duplicate.
+
+```{r}
+nrow(df[(duplicated(df[c('artist', 'song')])),][c('artist', 'song')])
+```
+Duplicates are detected on the basis that an artist and song should comprise a unique pair, and duplicated artist-song pairs are removed from the dataset. Because the data is ordered chronologically, this means that the later record is always removed.
+
+```{r}
+df = df[!(duplicated(df[c('artist', 'song')])),]
+```
+
+Below, we derive 4 additional features to aid in analysis:
+
+- **words_per_sec**: We perform a word count on the lyrics of each song and divide by the duration of the song in seconds.
+- **duration_min**: To make the duration of each song more understandable, we convert from milliseconds to minutes.
+- **decade**: We apply a floor function to each year divided by 10, and multiply the result by 10. Note that this is different from rounding to the nearest decade.
+- **artist_base**: The artist names often contain additional information when a second artist is "featured" as part of a collaboration. We derive an "artist base" feature so we may perform analyses only on the primary artist of each song. Because the "artist" feature is all formatted similarly, this involves only removing the character sequence "feat" and all characters that follow it.
+
+```{r}
+# calculate words per second
+temp = strsplit(df$lyrics, split=" ")
+df['words_per_sec'] = sapply(temp, length) / (df['duration_ms'] / 1000)
+
+# calculate duration in minutes
+df['duration_min'] = df['duration_ms'] / 1000 / 60
+
+# create a decade column
+df['decade'] = floor(df['year'] / 10) * 10
+
+# create base artist by stripping away featured artists
+df = mutate(df, artist_base = str_replace_all(artist, "\\s\\(*feat.*", ""))
+```
+
+# Main analysis
+
+We present this exploratory data analysis in four sections as outlined in the introduction: artists, words, and audio features.
+
+### Artists
+In this subsection, we examine the data at the artist level to answer some basic initial questions.
+
+```{r}
+top_artists = df %>%
+                group_by(artist_base) %>%
+                summarize(num_singles = n()) %>%
+                arrange(desc(num_singles))
+top_artists = top_artists[0:30,]
+ggplot(top_artists, aes(x = reorder(artist_base, num_singles), y = num_singles)) +
+    geom_col() + 
+    coord_flip() +
+    xlab('Artist') +
+    ylab('Number of yearly top 100 singles from 1965-2015') +
+    labs(title = 'Who are the most popular artists of the past 50 years?')
+```
+```{r}
+most_explicit_artists = df %>%
+                group_by(artist_base) %>%
+                summarize(explicitness = sum(explicit)) %>%
+                arrange(desc(explicitness))
+
+most_explicit_artists = most_explicit_artists[0:30,]
+ggplot(most_explicit_artists, aes(x = reorder(artist_base, explicitness), y = explicitness)) +
+    geom_col() + 
+    coord_flip() +
+    xlab('Artist') +
+    ylab('Number of yearly top 100 explicit singles from 1965-2015') +
+    labs(title = 'Who are the most popular explicit artists of the past 50 years?')
+```
+
+To measure the explicitness of each artist, we initially considered averaging the binary 0/1 explicit attribute of each song by artist. However, because many artists only have 1 single in the Yearly Top 100 throughoug their career, this results in many artists having an average explicitness of 1. Thus, we fall back to simply counting the number of explicit singles per artist. Interestingly, only the top 3 most explicit artists (Eminem, Ludacris, and Drake) are also among the top 30 most popular artists. Eminem and Ludacris are famously prolific and explicit; in fact we can see that all 15 and 14, respectively, of their top singles are explicit. More generally, we also notice that the vast majority of these singles are from the hip hop and rap genres.
+
+```{r, fig.width=15, fig.height=5}
+
+most_featuring_artists = df %>%
+                    mutate(is_collab = str_detect(artist, 'feat')) %>%
+                    group_by(artist_base) %>%
+                    summarize(num_collaborations = sum(is_collab)) %>%
+                    arrange(desc(num_collaborations))
+most_featuring_artists = most_featuring_artists[0:20,]
+
+p1 = ggplot(most_featuring_artists, aes(x = reorder(artist_base, num_collaborations),
+                                              y = num_collaborations)) +
+    geom_col() +
+    xlab('Main artist') +
+    ylab('Number of top 100 singles featuring a guest artist') +
+    scale_y_continuous(breaks=1:9, labels=1:9) + 
+    coord_flip()
+
+matches = str_match(as.list(df['artist'])$artist, 'featuring\\s(.*)')
+matches = matches[, 2]
+matches = matches[!is.na(matches)]
+matches = as_tibble(matches)
+
+featured_artists = matches %>%
+                    group_by(value) %>%
+                    summarize(num_features = n()) %>%
+                    arrange(desc(num_features))
+featured_artists = featured_artists[1:20,]
+
+p2 = ggplot(featured_artists, aes(x = reorder(value, num_features),
+                                              y = num_features)) +
+    geom_col() +
+    xlab('Featured artist') +
+    ylab('Number of top 100 singles featured as guest') +
+    scale_y_continuous(breaks=1:12, labels=1:12) + 
+    coord_flip()
+
+grid.arrange(p1, p2, ncol=2)
+```
+
+Many top singles are the product of a collaboration between two artists, with the resulting artist attribution of the song taking the form "X featuring Y", where X denotes the main artist and Y denotes the guest/featured artist. Above, we see that Rihanna and Chris Brown most frequently feature other artists in their top singles, while Lil Wayne and T-Pain are the most frequent guests on other artists' top singles. Particularly interesting is the fact that while Usher, Timbaland, Santana, and David Guetta are among the 20 most "featuring" artist, they are not among even the top 20 most "featured" artists. Conversely, T-Pain, Snopp Dogg, Nicki Minah, and Will.I.Am are among the 20 most "featured" artist despite not being among the 20 most "featuring" artists.
+
+```{r}
+collaborations = df %>%
+                    mutate(is_collab = str_detect(artist, 'feat')) %>%
+                    group_by(year) %>%
+                    summarize(num_collaborations = sum(is_collab))
+ggplot(collaborations, aes(x = year, y = num_collaborations)) +
+    geom_line() +
+    xlab('Year') +
+    ylab('Number of top 100 singles featuring a guest artist')
+```
+
+More interesting still is the rising trend in artist collaborations over time that begins during the 1990s and takes off dramatically before plateauing in the late 2000s. Additional comments about this trend are presented in the executive summary.
+
+```{r}
+nunique_artists_year = df %>% 
+                        group_by(year) %>%
+                        summarize(nunique = n_distinct(artist_base))
+
+options(repr.plot.width = 16, repr.plot.height = 6)
+ggplot(nunique_artists_year, aes(x = year, y = nunique), fill='black') + 
+    geom_line() + 
+    ylab('Number of unique artists')
+```
+
+The plot above shows artist diversity over time, with diversity defined not on the basis of race but on the number of unique artists with top 100 singles each year. The trend depicted shows a mixed picture; the most diverse year is in the early 1970s while the least diverse is in 2009 and 2010, yet the pattern remains noisy enough that more years are needed before making a more solid determination.
+
+### Audio features
+
+In this subsection, we turn our focus to the audio features obtained from Spotify for each song, particularly how these features are related to one another as well as how they change over time. Originally, we aggregated each feature by year and plotted how the mean evolves over time. Not satisfied with the resulting loss in information by aggregating using solely the mean, we then incorporated additional aggregations such as the maximum and the minimum for each year before ultimately deciding to create box plots for each year to minimize information loss.
+
+```{r}
+#Duration
+spotifydf <- df%>%
+                group_by(year)
+
+ggplot(spotifydf) + geom_boxplot(aes(year, duration_min, group=year))+
+    ggtitle("Duration over time")+
+    ylab("Duration (in Minutes)")+
+    scale_x_continuous(breaks = seq(1960,2020,5))
+```
+
+From above, we observe a gradual increase in the durations of top 100 singles that peaks at 1990 with median song lengths just shy of 5 minutes before starting on a downward trend to under 4 minutes. This trend of declining song durations coincides with a decline in the variation of song lengths. One possible explanation is that as the music industry has become increasingly competitive, artists are forced to grab their audience's attention as quickly as possible, and as listeners gain access to an ever-expanding catalogue of songs, their attention spans are decreasing.
+
+```{r}
+#Acousticness
+ggplot(spotifydf) + geom_boxplot(aes(year, acousticness, group=year)) +
+    ggtitle("Acousticness over time") +
+    ylab("Acousticness") +
+    scale_x_continuous(breaks = seq(1960,2020,5))
+```
+
+Top 100 songs have been trending downward in acousticness from 1965 to 2015. This trend might also be attributed to an increasingly competitive music industry; live studio musicians and indeed recording studios themselves are much more expensive in contrast to hardware synthesizers, and later, software synthesizers on which artists can create entire songs using only a laptop computer.
+
+```{r}
+#Danceability
+ggplot(spotifydf) + geom_boxplot(aes(year, danceability, group=year)) +
+    ggtitle("Danceability over time")+
+    ylab("Danceability ")+
+    scale_x_continuous(breaks = seq(1960,2020,5))
+```
+
+While the median danceability of songs has remained relatively stable from 1985 to 2015, there exists a noticeable increase from 1965 to 1984.
+
+```{r}
+#Energy
+ggplot(spotifydf) + geom_boxplot(aes(year, energy, group=year)) +
+    ggtitle("Energy over time")+
+    ylab("Energy ")+
+    scale_x_continuous(breaks = seq(1960,2020,5))
+```
+
+Overall, there appears that songs are becoming more energetic and busier over time, though the signal is quite noisy. Most interestingly, from 1985 onwards, the change in median energy over time appears to even be cyclical.
+
+```{r}
+#Instrumentalness
+ggplot(spotifydf) + geom_boxplot(aes(year, instrumentalness, group=year)) +
+    ggtitle("Instrumentalness over time")+
+    ylab("Instrumentalness ")+
+    scale_x_continuous(breaks = seq(1960,2020,5))
+```
+
+Unsurprisingly, the median instrumentalness of top 100 singles consistently stays at or near 0, however we can observe a noticeable thinning out of outliers, suggesting that instrumental music is becoming increasingly unpopular. Additionally, this decline in the instrumentalness of songs could be tied to the decline of song lengths; if songs are becoming shorter because of declining listener attention spans, then one is likely to also observe songs with increasingly shorter instrumental introductions and interludes as artists favor "getting to the point."
+
+```{r}
+#Liveness
+ggplot(spotifydf) + geom_boxplot(aes(year, liveness, group=year)) +
+    ggtitle("Liveness over time")+
+    ylab("Liveness ")+
+    scale_x_continuous(breaks = seq(1960,2020,5))
+```
+
+There are no discernable trends in how the distribution of songs' liveness changes over time.
+
+```{r}
+#Loudness
+ggplot(spotifydf) + geom_boxplot(aes(year, loudness, group=year)) +
+    ggtitle("Loudness over Time")+
+    ylab("Loudness ")+
+    scale_x_continuous(breaks = seq(1960,2020,5))
+```
+
+Top 100 singles are unquestionably becoming much louder. We expand on an explanation of the "Loudness Wars" in the executive summary.
+
+```{r}
+#Speechiness
+ggplot(spotifydf) + geom_boxplot(aes(year, speechiness, group=year)) +
+    ggtitle("Speechiness over Time")+
+    ylab("Speechiness ")+
+    scale_x_continuous(breaks = seq(1960,2020,5))
+```
+
+Also pronounced is a dramatic increase in speechiness starting from 1990 and peaking in 2004 which may correspond with the increased popularity of rap over that period of time.
+
+```{r}
+#Tempo
+ggplot(spotifydf) + geom_boxplot(aes(year, tempo, group=year)) +
+    ggtitle("Tempo over Time")+
+    ylab("Tempo ")+
+    scale_x_continuous(breaks = seq(1960,2020,5))
+```
+
+There are no discernable trends in how the distribution of songs' tempos changes over time.
+
+```{r}
+#Valence
+ggplot(spotifydf) + geom_boxplot(aes(year, valence, group=year)) +
+    ggtitle("Valence over Time")+
+    ylab("Valence")+
+    scale_x_continuous(breaks = seq(1960,2020,5))
+```
+
+There is a general trend of songs becoming increasingly less positive, perhaps reflecting the increase in cultural and economic pressure society has been experiencing.
+
+```{r}
+#Verbosity
+ggplot(spotifydf) + geom_boxplot(aes(year, words_per_sec, group=year)) +
+    ggtitle("Verbosity over Time")+
+    ylab("Words per second")+
+    scale_x_continuous(breaks = seq(1960,2020,5))
+```
+
+Corresponding to the trends involving speechiness over time, we see that the number of words heard per second in songs has increased over time. Indeed, one should expect this given the previously observed speechiness trends as it is much easier to speak quickly than to sing quickly.
+
+```{r}
+# ADD parcoords and corresponding comments
+```
+
+
+To examine the correlation structure of the data's continuous features, we create a correlation matrix and visualize it with a heatmap below. Additionally, we arrange the features so that those with the most similar correlations to other features are placed near each other, with the dendrograms on the top and left showing which features are most similar to each other.
+
+```{r}
+columns = c('rank', 'year', 'acousticness', 'danceability', 'duration_min', 
+            'energy', 'instrumentalness', 'liveness', 'loudness', 'popularity',
+            'speechiness', 'tempo', 'valence', 'words_per_sec')
+
+df_cor = df[columns]
+correlation = cor(df_cor, method='pearson', use='pairwise.complete.obs')
+
+col = colorRampPalette(c('red', 'white', 'green'))(20)
+heatmap(x = correlation, col = col, symm = TRUE)
+```
+
+**Note**: This heatmap below was originally created in Python using the Seaborn visualization library. In translating the visualization to R using R's heatmap functionality, we were unable to produce a legend nor annotate the grid cells individually. We present this second, more ideal heatmap as an image in addition to the one created in R above.
+
+![stuff](../imgs/correlation-heatmap.png)
+
+The dendrogrammed correlation heatmap reveals some interesting aspects of the data's correlation structure:
+
+- Popularity and year are weakly correlated. This makes intuitive sense given that the audience on Spotify are more likely to listen to more current music and that people who would enjoy the older music might be less likely to listen to it on Spotify.
+- Loudness and year are also weakly correlated, as previously observed.
+- Loudness and energy are moderately correlated.
+- Acousticness and energy are weakly anticorrelated. This could be explained by the fact that ballads and other slow music are more likely to feature acoustic instruments.
+- Valance and danceability are weakly correlated. This could suggest that for the most part, people are less inclined to dance to sad or angry music.
+- Words per second is weakly correlated with speechiness. Indeed, it is easier to talk fast than to sing fast.
+
+The correlation heatmap provides guidance as to which pairs of features are worth investigating further.
+
+```{r, fig.width=10, fig.height=5}
+p1 = ggplot(df, aes(x=acousticness, y=energy)) +
+    geom_point(alpha=0.15) +
+    facet_wrap(~ decade)
+
+p2 = ggplot(df, aes(x=acousticness, y=energy, color=year)) +
+    geom_point(alpha=0.5) +
+    ggtitle('Acousticness vs. energy')
+
+grid.arrange(p1, p2, ncol = 2)
+```
+
+It appears that most songs have very low acousticness (below 0.125) and high energy (above 0.5). However, outside this dense region, as a song increases in acousticness, its energy appears to decrease quadratically. Furthermore, it appears that these less common high-acoustic/lower-energy songs are predominantly older, with the vast majority of more recent songs occupying the low-acoustic/higher-energy region. We can observe this more clearly by faceting on decade. The facetted scatterplots confirm more clearly that indeed songs are trending towards lower acousticness and higher energy with each passing decade (which was also observed in the time series box plots). It should be noted that because the time range of the dataset is from 1965-2015, the facets for the 1960s and 2010s have half as many data points as the facets for other decades.
+
+```{r, fig.width=10, fig.height=5}
+p2 = ggplot(df, aes(x=danceability, y=valence, color=year)) +
+    geom_point(alpha=0.5) + 
+    ggtitle('Danceability vs valence')
+
+p1 = ggplot(df, aes(x=danceability, y=valence)) +
+    geom_point(alpha=0.15) +
+    facet_wrap(~ decade)
+
+grid.arrange(p1, p2, ncol = 2)
+```
+
+```{r, fig.width=10, fig.height=5}
+p2 = ggplot(df, aes(x=speechiness, y=words_per_sec, color=year)) +
+    geom_point(alpha=0.5) +
+    ggtitle('Speechiness vs verbosity')
+
+p1 = ggplot(df, aes(x=speechiness, y=words_per_sec)) +
+    geom_point(alpha=0.15) +
+    facet_wrap(~ decade)
+
+grid.arrange(p1, p2, ncol = 2)
+```
+
+Above, we observe that speechiness and verbosity (words per second) are indeed positively correlated, albeit moderately and that top 100 singles have become increasingly more speechy and verbose starting from the 1990s when rap and hip hop first gained mainstream appeal.
+
+```{r, fig.width=10, fig.height=5}
+p1 = ggplot(df, aes(x=energy, y=loudness, color=year)) +
+    geom_point(alpha=0.5) +
+    ggtitle('Energy vs. loudness')
+
+p2 = ggplot(df, aes(x=energy, y=loudness)) +
+    geom_point(alpha=0.15) +
+    facet_wrap(~ decade)
+
+grid.arrange(p2, p1, ncol = 2)
+```
+
+### Words
+
+In this subsection, we perform analyses on the words within the lyrics of each song. In particular, given the rich set of features provided by Spotify, we can explore interesting questions such as "what are the most danceable words?" To facilitate such analysis, we [use Python](https://github.com/manksh/EDAV_Dream_Team/blob/master/notebooks/create-tidy-lyrics.ipynb) to tidy our dataset at the word-level. Whereas the original song-level dataset contains one row per song, the word-level dataset contains **one row per unique word per song**. For example, if the word "dance" appears multiple times in a single song, it would be transformed into a single row in the new dataset, but if the word "dance" appears in X songs, it would be transformed into X rows in the dataset. Each row of the word-level dataset inherits all the features of the song it belongs to (year, title, artist, audio features) and contains a new feature "count" indicating the number of times the word appears in that song. Furthermore, only words that appear in at least 10 different songs are included in the new dataset. Otherwise, if we attempt to answer "what are the most danceable words" by averaging the danceability of songs that word appears in, words that appear only in the single most danceable song would dominate such a ranking.
+
+```{r}
+words = read_csv('../data/tidy-words.csv')
+```
+
