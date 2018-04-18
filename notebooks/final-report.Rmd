@@ -31,7 +31,7 @@ library(stringr)
 # Introduction
 ### Team
 - **Manksh Gupta** (mg3835): exporatory data analysis, visualization (static plots), research
-- **Kathy Lin**: exploratory data analysis, visualization (static and Shiny dashboard) 
+- **Kathy Lin** (kl2615): exploratory data analysis, visualization (static and Shiny dashboard) 
 - **Louis Massera** (lm3287): exploratory data analysis, visualization (static plots)
 - **Chong Zhao** (cz2470): data processing, exploratory data analysis, visualization (static plots), writing final report
 
@@ -398,9 +398,66 @@ ggplot(spotifydf) + geom_boxplot(aes(year, words_per_sec, group=year)) +
 Corresponding to the trends involving speechiness over time, we see that the number of words heard per second in songs has increased over time. Indeed, one should expect this given the previously observed speechiness trends as it is much easier to speak quickly than to sing quickly.
 
 ```{r}
-# ADD parcoords and corresponding comments
-```
+keepcols <- c('year', 'acousticness', 'danceability', 'duration', 'energy', 'instrumentalness', 'liveness','loudness','speechiness', 'tempo', 'valence')
 
+spotifydf<-spotifydf%>%
+    filter(!is.na(duration_ms))%>%
+    mutate(duration=duration_ms/1000/60)
+
+spotifydf_s <- spotifydf%>%
+                select(keepcols) %>%
+                group_by(year)%>%
+                summarize(mean_acousticness = mean(acousticness),
+                        mean_danceability = mean(danceability),
+                        mean_duration = mean(duration),
+                        mean_energy = mean(energy),
+                        mean_instrumentalness = mean(instrumentalness),
+                        mean_liveness = mean(liveness),
+                        mean_loudness = mean(loudness),
+                        mean_speechiness = mean(speechiness),
+                        mean_tempo = mean(tempo),
+                        mean_valence = mean(valence)
+                )
+# %>%
+#                 gather(key='variable', value = 'Freq', -year)
+spotifydf_s$year<- factor(spotifydf_s$year, levels = unique(spotifydf_s$year))
+
+ggparcoord(spotifydf_s, columns = 2:11, alphaLines = 0.7, groupColumn ='year',scale = 'uniminmax')+xlab("")+ylab("") + theme(axis.text.x = element_text(angle=90))
+
+# custom function to transpose while preserving names
+transpose_df <- function(df) {
+  t_df <- data.table::transpose(df)
+  colnames(t_df) <- rownames(df)
+  rownames(t_df) <- colnames(df)
+  return(t_df)
+}
+
+# using the function
+dft<-transpose_df(spotifydf_s)
+colnames(dft) <- dft[1, ]
+dft <- dft[-1,]
+dft<- dft%>%
+    rownames_to_column('Variable')
+
+ggparcoord(dft, columns = 2:52, alphaLines = 0.7, groupColumn ='Variable',scale = 'uniminmax')+xlab("")+ylab("") + theme(axis.text.x = element_text(angle=90))
+```
+```{r}
+spotifydf_s$year <- year(as.Date(as.character(spotifydf_s$year), "%Y"))
+
+rownames(spotifydf_s)<- spotifydf_s$year
+p <- spotifydf_s%>% arrange(year) %>%
+    parcoords(
+        rownames = F,
+        brushMode = "1D-axes",
+        reorderable = T,
+        queue = T,
+        alpha=.8,
+        color = list(colorBy = "year", colorScale = htmlwidgets::JS("d3.scale.category10()")),
+        width = 1100,
+        height = 500
+    )
+p
+```
 
 To examine the correlation structure of the data's continuous features, we create a correlation matrix and visualize it with a heatmap below. Additionally, we arrange the features so that those with the most similar correlations to other features are placed near each other, with the dendrograms on the top and left showing which features are most similar to each other.
 
