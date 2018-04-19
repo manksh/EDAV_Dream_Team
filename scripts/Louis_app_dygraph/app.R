@@ -40,7 +40,7 @@ ui <- fluidPage(
     
     mainPanel(
       plotOutput("word_graph"),
-      uiOutput("video", width="100px", height="100px")
+      uiOutput("video")
     )
   )
 )
@@ -61,15 +61,8 @@ server <- function(input, output) {
       
       word_1 <- input$word1
       word_2 <- input$word2
-      if (word_1 == " " & word_2 == " "){
-        output$video <- renderUI({
-          HTML(paste0('<iframe width="500" height="300" src="https://www.youtube.com/embed/SHJ1HL4eMLQ", frameborder="0" allowfullscreen></iframe>'))
-          }
-        )
-        output$selected_var <- renderText({ 
-          
-        })
-      }
+      
+      if (word_1 == " " & word_2 == " "){}
       else if (word_1 == " "){
         data = filter(word_count, word_count$word == word_2)
         ggplot(data, aes(x = year, y = count)) +
@@ -79,8 +72,6 @@ server <- function(input, output) {
           theme(plot.title = element_text(hjust = 0.5)) +
           xlab("Year") + 
           ylab("Count")
-        output$video <- renderUI({})
-        
       }
       else if (word_2 == " " | word_1 == word_2){
         data = filter(word_count, word_count$word == word_1)
@@ -91,8 +82,6 @@ server <- function(input, output) {
           theme(plot.title = element_text(hjust = 0.5)) +
           xlab("Year") + 
           ylab("Count")
-        output$video <- renderUI({})
-        
       }
       else {
         data = filter(word_count, word_count$word == word_1 | word_count$word == word_2)
@@ -103,10 +92,18 @@ server <- function(input, output) {
           theme(plot.title = element_text(hjust = 0.5)) +
           xlab("Year") + 
           ylab("Count")
-        output$video <- renderUI({})
-        
       }
   })
+  
+  output$video <- renderUI({
+    word_1 <- input$word1
+    word_2 <- input$word2
+    if (word_1 == " " & word_2 == " "){
+    HTML(paste0('<iframe width="500" height="300" src="https://www.youtube.com/embed/SHJ1HL4eMLQ", frameborder="0" allowfullscreen></iframe>'))
+    }
+    else{}
+  }
+  )
   #End marker for server         
 }
 
