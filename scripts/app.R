@@ -133,7 +133,6 @@ ui <- dashboardPage(
                                         "Choose your n-gram range:",
                                         choices = grams),
                             selectInput("decade", "Choose your decade:", choices = decades),
-                            actionButton("update", "Change"),
                             helpText("Please be patient as the word clouds may appear slowly at first."),
                             hr(),
                             br()),
@@ -271,29 +270,15 @@ server <- function(input, output) {
     
     ####################
     #Dashboard 2 Graphs
-    # Define a reactive expression for the document term matrix
-    terms <- reactive({
-        # Change when the "update" button is pressed...
-        input$update
-        # ...but not for anything else
-        isolate({
-            withProgress({
-                setProgress(message = "Processing corpus...")
-                getN_gram(input$selection, input$decade)
-            })
-        })
-    })
     
-    # Make the wordcloud drawing predictable during a session
-    #wordcloud_rep <- repeatable(wordcloud)
+    pal <- brewer.pal(9, "OrRd")
+    pal <- pal[-(1:3)]
     
     output$ngrams <- renderPlot({
-        v <- terms()
-        pal <- brewer.pal(9, "OrRd")
-        pal <- pal[-(1:3)]
-        wordcloud(v$word, v$count, scale=c(5, 0.2), min.freq=3, random.order = FALSE , random.color = FALSE,
+        ngram_selection <- getN_gram(input$selection, input$decade)
+        wordcloud(ngram_selection$word, ngram_selection$count, scale=c(5, 1), min.freq=3, random.order = FALSE , random.color = FALSE,
                   rot.per=.15, colors=pal)
-    })
+    }, width=700, height=700)
 
     
     ####################

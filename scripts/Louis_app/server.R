@@ -19,7 +19,7 @@ function(input, output, session) {
     v <- terms()
     pal <- brewer.pal(9, "OrRd")
     pal <- pal[-(1:3)]
-    wordcloud(v$word, v$count, scale=c(5, 0.2), min.freq=3, random.order = FALSE , random.color = FALSE,
+    wordcloud(v$word, v$count, scale=c(5, 1), min.freq=3, random.order = FALSE , random.color = FALSE,
               rot.per=.15, colors=pal)
-  })
+  }, width=700, height=700)
 }
