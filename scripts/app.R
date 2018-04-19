@@ -4,8 +4,23 @@ library(shinydashboard)
 source('global.R')
 
 ######### Load Data ############
-spotifydf <- read.csv("billboard-spotify.csv", stringsAsFactors=FALSE)
+spotifydf <- read.csv("../data/billboard-spotify.csv", stringsAsFactors=FALSE)
 spotifydf <- as.tibble(spotifydf)
+
+#Get rid of duplicates
+df = spotifydf[!(duplicated(spotifydf[c('artist', 'song')])),]
+# calculate words per second
+temp = strsplit(df$lyrics, split=" ")
+df['words_per_sec'] = sapply(temp, length) / (df['duration_ms'] / 1000)
+
+# calculate duration in minutes
+df['duration_min'] = df['duration_ms'] / 1000 / 60
+
+# create a decade column
+df['decade'] = floor(df['year'] / 10) * 10
+
+# create base artist by stripping away featured artists
+df = mutate(df, artist_base = str_replace_all(artist, "\\s\\(*feat.*", ""))
 
 spotifydf<-spotifydf%>%
     filter(!is.na(duration_ms))%>%
@@ -35,6 +50,43 @@ spotifydf_s <- spotifydf%>%
 #                 gather(key='variable', value = 'Freq', -year)
 spotifydf_s$year<- factor(spotifydf_s$year, levels = unique(spotifydf_s$year))
 
+########################################
+#Word cloud stuff 
+
+# The list of valid n-grams
+grams <<- list("N-grams" = "n-grams",
+               "Unigrams" = "unigram",
+               "Bigrams" = "bigram",
+               "Trigrams" = "trigram")
+
+decades <<-  list("1960s"="1960",
+                  "1970s"="1970",
+                  "1980s"="1980",
+                  "1990s"="1990",
+                  "2000s"="2000",
+                  "2010s"="2010")
+
+# Using "memoise" to automatically cache the results
+getN_gram <- memoise(function(gram, decade) {
+    if (!(gram %in% grams))
+        stop("Unknown category")
+    if (!(decade %in% decades))
+        stop("Unknown category")
+    current_decade = as.numeric(decade)
+    current_gram = gram
+
+    n_gram <- read.csv("../data/Louis/n_gram.csv")
+    if (current_gram == "n-grams") {
+        # print('hi')
+        n_gram_filtered <- filter(n_gram, n_gram$decade == current_decade)
+    } else {
+        # print('hello')
+        n_gram_filtered <- filter(n_gram, n_gram$decade == current_decade, n_gram$gram == current_gram)
+    }
+    return(n_gram_filtered)
+})
+
+
 ##############UI ########################
 ui <- dashboardPage(
     dashboardHeader(title = "DreamTeam Final Project"),
@@ -43,7 +95,7 @@ ui <- dashboardPage(
             menuItem("Artists", tabName = "dashboard1"),
             menuItem("Songs", tabName = "dashboard2"),
             menuItem("Evolution over Time", tabName = "dashboard3")
-        # checkboxGroupInput("Tabs", label= h4("interactive"), choices = list('tabs'='tabs'),selected=NULL)
+        
         )
     ),
     dashboardBody(
@@ -54,23 +106,21 @@ ui <- dashboardPage(
             tabItem(tabName = "dashboard1",
                     sidebarLayout(
                         sidebarPanel(
-                            h3('What information about artists are you interested in?'),
-                            selectInput("artists", label = h5("Select:"), choices = c("Artist Lifespan" =  "relevance",
-                                                                                      "Most Collaborative Artists" = "collaboration"
-                            ),c('Artist Lifespan')),
-                            hr(),
-                            helpText("The dropdown menu above contains three interesting aspects of the artists that have appeared in the Billboard Top 100 that we have investigated. 
-                                     You can look at an artist's lifespan or the most collaborative artists.All analyses are computed over 1965-2015."),
-                            
+                            helpText("Maximize the browser window. There are three aspects of Billboard Top 100 Artists plotted on this tab. Scroll down to see them all:
+                                     you can look at an artist's lifespan, the most collaborative artists and most featured, or the level of collaboration over time. All analyses are computed over 1965-2015."),
+                            checkboxGroupInput("Tabs", label= h4("Collaboration"), choices = list('View Collaboration Levels over Time'='collabo'),selected=NULL),
                             br()),
                         mainPanel(
                             h2('Analysis of Billboard Top 100 Artists'),
-                            
-                            hr(),
-                            #plotOutput("artistlifespan"), # Note that artistlifespan should appear as a reactive in server
-                            hr(),
-                            #plotOutput("collaborative"),
-                            hr()
+                            conditionalPanel(
+                                condition = "input.Tabs=='collabo'",
+                                tabBox(
+                                    title = "Collaboration over Time",
+                                    id="ttabs2", width = 250, height = "300px",
+                                    dygraphOutput("COT", height = 200)
+                                )),
+                            plotOutput("artistlifespan"),
+                            plotOutput('collaborative')
 
                         )
                         )),
@@ -79,21 +129,19 @@ ui <- dashboardPage(
                     sidebarLayout(
                         sidebarPanel(
                             h3('Top 100 Ngrams'),
-                            selectInput("ngramdecade", label = h5("Select:"), choices = c("1960s"="1960s",
-                                                                                      "1970s"="1970s",
-                                                                                      "1980s"="1980s",
-                                                                                      "1990s"="1990s",
-                                                                                      "2000s"="2000s",
-                                                                                      "2010s"="2010s"
-                                                                                    ),
-                            c('1960s')),
+                            selectInput("selection", 
+                                        "Choose your n-gram range:",
+                                        choices = grams),
+                            selectInput("decade", "Choose your decade:", choices = decades),
+                            actionButton("update", "Change"),
+                            helpText("Please be patient as the word clouds may appear slowly at first."),
                             hr(),
                             br()),
                         mainPanel(
                             h1('Analysis of Songs'),
-                            
+                        
                             hr(),
-                            plotlyOutput('ngrams')
+                            plotOutput('ngrams')
                         )
                     )
             ),
@@ -114,8 +162,11 @@ ui <- dashboardPage(
                                                                                       "Valence" = "valence"
                                                                                       ),c('Duration')),
                             hr(),
+                            helpText("Click and drag to zoom in (double click to zoom back out)."),
+                            hr(),
+                            
                             checkboxGroupInput("Tabs", label= h4("Interactive"), choices = list('Parallel Coordinates'='parcoord'),selected=NULL),
-                            helpText("Note: It may be necessary to maximize the dashboard window to visualize the parallel coordinates fully. Also note that the years have an
+                            helpText("Note: It may be necessary to maximize the dashboard window and hide the navigation  menu on the left to visualize the parallel coordinates entirely. Also note that the years have an
 additional comma."),
                             # helpText("Continuous variables within Billboard Top 100 include: Duration, Acousticness, Danceability
                             #          , Energy, Instrumentalness, Liveness, Loudness, Speechiness, Tempo, and Valence"),
@@ -131,10 +182,9 @@ additional comma."),
                                     id="ttabs", width = 15, height = "300px",
                                     parcoordsOutput('parcoordvar', width=750, height = "300px")
                                 )),
-                            # uiOutput("ui"),
                             h2('Evolution of Music Between 1965-2015'),
                             hr(),
-                            plotOutput('evolution1'),
+                            dygraphOutput("evolution1"),
                             textOutput('evolution2'),
                             hr(),
                             plotOutput('evolution3')
@@ -150,6 +200,100 @@ additional comma."),
 
 
 server <- function(input, output) {
+    
+    ####################
+    #Dashboard 1: ARTISTS graphs
+        output$COT <- renderDygraph({
+                collaborations = df %>%
+                    mutate(is_collab = str_detect(artist, 'feat')) %>%
+                    group_by(year) %>%
+                    summarize(num_collaborations = sum(is_collab))
+    
+                dygraph(collaborations,
+                        ylab = 'Number of top 100 singles featuring a guest artist',
+                        xlab = "Year") %>%
+                    dyOptions(drawGrid = input$showgrid)
+        })
+        
+        output$artistlifespan <- renderPlot({
+            top_artists = df %>%
+                group_by(artist_base) %>%
+                summarize(num_singles = n(), earliest_hit = min(year), latest_hit = max(year), longevity = latest_hit - earliest_hit, hits_per_year = num_singles / longevity) %>%
+                arrange(desc(longevity))
+            top_artists_30 = top_artists[0:30,]
+            
+            ggplot(top_artists_30) +
+                geom_segment(aes(x=earliest_hit, xend=latest_hit, y=reorder(artist_base, longevity), yend=reorder(artist_base, longevity), color=num_singles), size=5) +
+                geom_text(aes(x=latest_hit + 3, y=reorder(artist_base, longevity), label=paste(longevity, 'years'))) +
+                ggtitle('Career spans of most timeless artists') + ylab("Artist")+xlab("Earliest Hit in this Year")
+        })
+        
+        output$collaborative <- renderPlot({
+            most_featuring_artists = df %>%
+                mutate(is_collab = str_detect(artist, 'feat')) %>%
+                group_by(artist_base) %>%
+                summarize(num_collaborations = sum(is_collab)) %>%
+                arrange(desc(num_collaborations))
+            most_featuring_artists = most_featuring_artists[0:20,]
+            
+            p1 = ggplot(most_featuring_artists, aes(x = reorder(artist_base, num_collaborations),
+                                                    y = num_collaborations)) +
+                geom_col() +
+                xlab('Main artist') +
+                ylab('Number of top 100 singles featuring a guest artist') +
+                ggtitle("Artists who Feature Others Most")+
+                scale_y_continuous(breaks=1:9, labels=1:9) + 
+                coord_flip()
+            
+            matches = str_match(as.list(df['artist'])$artist, 'featuring\\s(.*)')
+            matches = matches[, 2]
+            matches = matches[!is.na(matches)]
+            matches = as_tibble(matches)
+            
+            featured_artists = matches %>%
+                group_by(value) %>%
+                summarize(num_features = n()) %>%
+                arrange(desc(num_features))
+            featured_artists = featured_artists[1:20,]
+            
+            p2 = ggplot(featured_artists, aes(x = reorder(value, num_features),
+                                              y = num_features)) +
+                geom_col() +
+                xlab('Featured artist') +
+                ylab('Number of top 100 singles featured as guest') +
+                ggtitle("Most Featured Artists")+
+                scale_y_continuous(breaks=1:12, labels=1:12) + 
+                coord_flip()
+            
+            graph <- grid.arrange(p1, p2, ncol=2)
+            print(graph)
+        })
+    
+    ####################
+    #Dashboard 2 Graphs
+    # Define a reactive expression for the document term matrix
+    terms <- reactive({
+        # Change when the "update" button is pressed...
+        input$update
+        # ...but not for anything else
+        isolate({
+            withProgress({
+                setProgress(message = "Processing corpus...")
+                getN_gram(input$selection, input$decade)
+            })
+        })
+    })
+    
+    # Make the wordcloud drawing predictable during a session
+    #wordcloud_rep <- repeatable(wordcloud)
+    
+    output$ngrams <- renderPlot({
+        v <- terms()
+        pal <- brewer.pal(9, "OrRd")
+        pal <- pal[-(1:3)]
+        wordcloud(v$word, v$count, scale=c(5, 0.2), min.freq=3, random.order = FALSE , random.color = FALSE,
+                  rot.per=.15, colors=pal)
+    })
 
     
     ####################
@@ -171,118 +315,112 @@ server <- function(input, output) {
             )
     )
     #Line Graphs
-    output$evolution1 <- renderPlot({
+    # output$evolution1 <- renderPlotly({
+    output$evolution1 <- renderDygraph({
         if(input$variable=="duration"){
                 spotifydf2<-spotifydf%>%
                                     summarize(avg_duration = mean(duration))
-                g1<- ggplot(spotifydf2, aes(year, avg_duration)) + geom_line() +
-                    ggtitle("Average Duration over Time")+
-                    ylab("Average Duration")+
-                    xlab("Year")+
-                    scale_y_continuous(breaks = seq(2.5, 5, .5))+
-                    scale_x_continuous(breaks = seq(1960,2020,5))
-                print(g1)
-                renderText({"Test"})
+                dygraph(spotifydf2, 
+                        main = "Average Duration(in Minutes) from 1965-2015",
+                        ylab = "Average Duration(Min)",
+                        xlab = "Year") %>%
+                dyOptions(drawGrid = input$showgrid)
         } else if (input$variable=="acousticness") {
             spotifydf3<-spotifydf%>%
                 summarize(average_acoustic = mean(acousticness))
-            g2<- ggplot(spotifydf3, aes(year, average_acoustic)) + geom_line() +
-                ggtitle("Average Acousticness over Time") +
-                ylab("Average Acousticness")+
-                xlab("Year")+
-                scale_x_continuous(breaks = seq(1960,2020,5))+
-                scale_y_continuous(breaks = seq(0.0, 0.5, 0.05))
-            print(g2)
-            renderText({"Test1"})
+            dygraph(spotifydf3, 
+                    main = "Average Acousticness from 1965-2015",
+                    ylab = "Average Acousticness",
+                    xlab = "Year") %>%
+                dyOptions(drawGrid = input$showgrid)
         } else if (input$variable=="danceability") {
             spotifydf4<- spotifydf%>%
                 summarize(avg_dance = mean(danceability))
-            
-            g3 <- ggplot(spotifydf4, aes(year, avg_dance)) + geom_line() +
-                ggtitle("Average Danceability over Time")+
-                ylab("Average Danceability ")+
-                xlab("Year")+
-                scale_x_continuous(breaks = seq(1960,2020,5))+
-                scale_y_continuous(breaks = seq(0.40, 0.8, 0.05))
-            g3
+            dygraph(spotifydf4, 
+                    main = "Average Danceability from 1965-2015",
+                    ylab = "Average Danceability",
+                    xlab = "Year") %>%
+                dyOptions(drawGrid = input$showgrid)
         } else if (input$variable=="energy") {
             spotifydf5<- spotifydf%>%
                 summarize(avg_energy = mean(energy))
             
-            g4 <- ggplot(spotifydf5, aes(year, avg_energy)) + geom_line() +
-                ggtitle("Average Energy over Time")+
-                ylab("Average Energy ")+
-                xlab("Year")+
-                scale_x_continuous(breaks = seq(1960,2020,5))+
-                scale_y_continuous(breaks = seq(0.40, 0.8, 0.05))
-            g4
+            dygraph(spotifydf5, 
+                    main = "Average Energy from 1965-2015",
+                    ylab = "Average Energy",
+                    xlab = "Year") %>%
+                dyOptions(drawGrid = input$showgrid)
         } else if (input$variable=="instrumentalness") {
             spotifydf6<- spotifydf%>%
                 summarize(avg_instrument = mean(instrumentalness))
             
-            g5 <- ggplot(spotifydf6, aes(year, avg_instrument)) + geom_line() +
-                ggtitle("Average Instrumentalness over Time")+
-                ylab("Average Instrumentalness ")+
-                xlab("Year")
-                scale_x_continuous(breaks = seq(1960,2020,5))
-            g5
+            dygraph(spotifydf6, 
+                    main = "Average Instrumentalness from 1965-2015",
+                    ylab = "Average Instrumentalness",
+                    xlab = "Year") %>%
+                dyOptions(drawGrid = input$showgrid)
         } else if (input$variable=="liveness") {
             spotifydf7<- spotifydf%>%
                 summarize(avg_liveness = mean(liveness))
             
-            g6 <- ggplot(spotifydf7, aes(year, avg_liveness)) + geom_line() +
-                ggtitle("Average Liveness over Time")+
-                ylab("Average Liveness ")+
-                xlab("Year")+
-                scale_x_continuous(breaks = seq(1960,2020,5))+
-                scale_y_continuous(breaks = seq(0.0, 0.3, 0.02))
-            g6
+            dygraph(spotifydf7, 
+                    main = "Average Liveness from 1965-2015",
+                    ylab = "Average Livness",
+                    xlab = "Year") %>%
+                dyOptions(drawGrid = input$showgrid)
         } else if (input$variable=="loudness") {
             spotifydf8<- spotifydf%>%
                 summarize(avg_loudness = mean(loudness))
             
-            g7 <- ggplot(spotifydf8, aes(year, avg_loudness)) + geom_line() +
-                ggtitle("Average Loudness over Time")+
-                ylab("Average Loudness ")+
-                xlab("Year")+
-                scale_x_continuous(breaks = seq(1960,2020,5))
-            
-            g7
+            dygraph(spotifydf8, 
+                    main = "Average Loudness from 1965-2015",
+                    ylab = "Average Loudness",
+                    xlab = "Year") %>%
+                dyOptions(drawGrid = input$showgrid)
         } else if (input$variable=="speechiness") {
             spotifydf9<- spotifydf%>%
                 summarize(avg_speech = mean(speechiness))
             
-            g8 <- ggplot(spotifydf9, aes(year, avg_speech)) + geom_line() +
-                ggtitle("Average Speechiness over Time")+
-                ylab("Average Speechiness ")+
-                xlab("Year")+
-                scale_x_continuous(breaks = seq(1960,2020,5))+ 
-                scale_y_continuous(breaks = seq(0.0,0.15,0.03))
-            g8
+            dygraph(spotifydf9, 
+                    main = "Average Speechiness from 1965-2015",
+                    ylab = "Average Speechiness",
+                    xlab = "Year") %>%
+                dyOptions(drawGrid = input$showgrid)
         } else if (input$variable=="tempo") {
             spotifydf10<- spotifydf%>%
                 summarize(avg_tempo = mean(tempo))
             
-            g9 <- ggplot(spotifydf10, aes(year, avg_tempo)) + geom_line() +
-                ggtitle("Average Tempo over Time")+
-                ylab("Average Tempo ")+
-                xlab("Year")+
-                scale_x_continuous(breaks = seq(1960,2020,5))
-            g9
+            dygraph(spotifydf10, 
+                    main = "Average Tempo from 1965-2015",
+                    ylab = "Average Tempo",
+                    xlab = "Year") %>%
+                dyOptions(drawGrid = input$showgrid)
         }
         
         else {
             spotifydf11<- spotifydf%>%
                 summarize(avg_valence = mean(valence))
             
-            g10 <- ggplot(spotifydf11, aes(year, avg_valence)) + geom_line() +
-                ggtitle("Average Valence over Time")+
-                ylab("Average Valence")+
-                xlab("Year")
-                scale_x_continuous(breaks = seq(1960,2020,5))
-            g10
+            dygraph(spotifydf11, 
+                    main = "Average Valence from 1965-2015",
+                    ylab = "Average Valence",
+                    xlab = "Year") %>%
+                dyOptions(drawGrid = input$showgrid)
         }
     })
+    
+    output$from <- renderText({
+        strftime(req(input$dygraph_date_window[[1]]), "%Y ")      
+    })
+    
+    output$to <- renderText({
+        strftime(req(input$dygraph_date_window[[2]]), "%Y")
+    })
+    
+    output$clicked <- renderText({
+        strftime(req(input$dygraph_click$x), "%Y")
+    })
+    
     # Explanatory Text with Average Line Graphs
     output$evolution2 <- renderText({
         paste("You have selected", input$variable)

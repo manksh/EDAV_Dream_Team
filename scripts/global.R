@@ -111,5 +111,18 @@ if(!require(skimr))
     install.packages('skimr')
     library(skimr)
 }
-
-
+if(!require(tm))
+{
+    install.packages('tm')
+    library(tm)
+}
+if(!require(wordcloud))
+{
+    install.packages('wordcloud')
+    library(wordcloud)
+}
+if(!require(memoise))
+{
+    install.packages('memoise')
+    library(memoise)
+}
