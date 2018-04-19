@@ -1,0 +1,113 @@
+### run this page first
+
+
+if(!require(shiny))
+{
+  install.packages('shiny')
+  library(shiny)
+}
+if(!require(shinydashboard))
+{
+  install.packages('shinydashboard')
+  library(shinydashboard)
+}
+if(!require(shinythemes))
+{
+  install.packages('shinythemes')
+  library(shinythemes)
+}
+if(!require(gridExtra))
+{
+  install.packages('gridExtra')
+  library(gridExtra)
+}
+if(!require(ggthemes))
+{
+  install.packages('ggthemes')
+  library(ggthemes)
+}
+if(!require(readr))
+{
+  install.packages('readr')
+  library(readr)
+}
+if(!require(lubridate))
+{
+  install.packages('lubridate')
+  library(lubridate)
+}
+if(!require(dplyr))
+{
+  install.packages('dplyr')
+  library(dplyr)
+}
+if(!require(GGally))
+{
+  install.packages('GGally')
+  library(GGally)
+}
+if(!require(dygraphs))
+{
+  install.packages('dygraphs')
+  library(dygraphs)
+}
+if(!require(DT))
+{
+  install.packages('DT')
+  library(DT)
+}
+if(!require(plotly))
+{
+  install.packages('plotly')
+  library(plotly)
+}
+if(!require(xts))
+{
+  install.packages('xts')
+  library(xts)
+}
+if(!require(tidyverse))
+{
+  install.packages('tidyverse')
+  library(tidyverse)
+}
+if(!require(ggplot2))
+{
+  install.packages('ggplot2')
+  library(ggplot2)
+}
+if(!require(parcoords))
+{
+  devtools::install_github("timelyportfolio/parcoords")
+  library(parcoords)
+}
+if(!require(tibble))
+{
+  install.packages('tibble')
+  library(tibble)
+}
+if(!require(forcats))
+{
+  install.packages('forcats')
+  library(forcats)
+}
+if(!require(DAAG))
+{
+  install.packages('DAAG')
+  library(DAAG)
+}
+if(!require(extracat))
+{
+  install.packages('extracat')
+  library(extracat)
+}
+if(!require(vcd))
+{
+  install.packages('vcd')
+  library(vcd)
+}
+if(!require(skimr))
+{
+  install.packages('skimr')
+  library(skimr)
+}
