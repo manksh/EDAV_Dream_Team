@@ -3,8 +3,9 @@ library(shiny)
 library(shinydashboard)
 source('global.R')
 
+
 ######### Load Data ############
-spotifydf <- read.csv("../data/billboard-spotify.csv", stringsAsFactors=FALSE)
+spotifydf <- read.csv("billboard-spotify.csv", stringsAsFactors=FALSE)
 spotifydf <- as.tibble(spotifydf)
 
 #Get rid of duplicates
@@ -33,7 +34,7 @@ spotifydf <- spotifydf%>%
 keepcols <- c('year', 'acousticness', 'danceability', 'duration', 'energy', 'instrumentalness', 'liveness','loudness','speechiness', 'tempo', 'valence')
 
 spotifydf_s <- spotifydf%>%
-    select(keepcols) %>%
+    dplyr::select(keepcols) %>%
     group_by(year)%>%
     summarize(acoustic = mean(acousticness), 
               danceability = mean(danceability), 
@@ -75,7 +76,7 @@ getN_gram <- memoise(function(gram, decade) {
     current_decade = as.numeric(decade)
     current_gram = gram
 
-    n_gram <- read.csv("../data/Louis/n_gram.csv")
+    n_gram <- read.csv("n_gram.csv")
     if (current_gram == "n-grams") {
         # print('hi')
         n_gram_filtered <- filter(n_gram, n_gram$decade == current_decade)
@@ -85,6 +86,12 @@ getN_gram <- memoise(function(gram, decade) {
     }
     return(n_gram_filtered)
 })
+######################
+#Covers Over Time
+cover <- read.csv("cover_year.csv")
+
+# Word Count over Time
+word_count <- read.csv("word_count_per_year.csv")
 
 
 ##############UI ########################
@@ -93,7 +100,8 @@ ui <- dashboardPage(
     dashboardSidebar(
         sidebarMenu(
             menuItem("Artists", tabName = "dashboard1"),
-            menuItem("Songs", tabName = "dashboard2"),
+            menuItem("Word Clouds", tabName = "dashboard2"),
+            menuItem("Songs", tabName = "dashboard4"),
             menuItem("Evolution over Time", tabName = "dashboard3")
         
         )
@@ -108,12 +116,12 @@ ui <- dashboardPage(
                         sidebarPanel(
                             helpText("Maximize the browser window. There are three aspects of Billboard Top 100 Artists plotted on this tab. Scroll down to see them all:
                                      you can look at an artist's lifespan, the most collaborative artists and most featured, or the level of collaboration over time. All analyses are computed over 1965-2015."),
-                            checkboxGroupInput("Tabs", label= h4("Collaboration"), choices = list('View Collaboration Levels over Time'='collabo'),selected=NULL),
+                            checkboxGroupInput("ArtistsTabs", label= h4("Collaboration"), choices = list('View Collaboration Levels over Time'='collabo'),selected=NULL),
                             br()),
                         mainPanel(
                             h2('Analysis of Billboard Top 100 Artists'),
                             conditionalPanel(
-                                condition = "input.Tabs=='collabo'",
+                                condition = "input.ArtistsTabs=='collabo'",
                                 tabBox(
                                     title = "Collaboration over Time",
                                     id="ttabs2", width = 250, height = "300px",
@@ -136,14 +144,61 @@ ui <- dashboardPage(
                             helpText("Please be patient as the word clouds may appear slowly at first."),
                             hr(),
                             br()),
-                        mainPanel(
-                            h1('Analysis of Songs'),
                         
-                            hr(),
-                            plotOutput('ngrams')
+                        mainPanel(
+                            h1('Word Clouds'),
+                            plotOutput('ngrams', width = "700px", height = "700px")
+
                         )
                     )
             ),
+            ### Songs (# Covers + Word Counts over Time)
+            tabItem(tabName = "dashboard4",
+                    sidebarLayout(
+                        sidebarPanel(
+                            h3('Word Count over Time'),
+                            helpText("Choose any two words to compare how they're used over time"),
+                            selectInput("word1",
+                                        "Choose a word:",
+                                        choices = c("boy" = "boy",
+                                                    "girl" = "girl",
+                                                    "like" = "like",
+                                                    "love" = "love",
+                                                    "man" = "man",
+                                                    "peace" = "peace",
+                                                    "war" = "war",
+                                                    "woman" = "woman",
+                                                    " " = " "), c("love")),
+                            selectInput("word2", "Choose another word:", choices = c("boy" = "boy",
+                                                                                     "girl" = "girl",
+                                                                                     "like" = "like",
+                                                                                     "love" = "love",
+                                                                                     "man" = "man",
+                                                                                     "peace" = "peace",
+                                                                                     "war" = "war",
+                                                                                     "woman" = "woman",
+                                                                                     " " = " "), c("like")),
+                            hr(),
+                            h3('# Covers over Time'),
+                            helpText("Slide the slider to change the time intervals analyzed for # of covers in that time period."),
+                            hr(), 
+                            sliderInput("binwidth",
+                                        "Binwidth:",
+                                        min = 1,  max = 15, value = 1),
+                            br()),
+                        
+                        mainPanel(
+                            h1('Analysis of Songs'),
+                            hr(),
+                            plotOutput("word_graph"),
+                            uiOutput("video"),
+                            hr(), 
+                            br(),
+                            plotOutput("cover_hist")
+                        )
+                    )
+            ),
+            
             ### evolution over time dashboard
             tabItem(tabName = "dashboard3",
                     sidebarLayout(
@@ -279,7 +334,65 @@ server <- function(input, output) {
         wordcloud(ngram_selection$word, ngram_selection$count, scale=c(5, 1), min.freq=3, random.order = FALSE , random.color = FALSE,
                   rot.per=.15, colors=pal)
     }, width=700, height=700)
+    
+    output$word_graph <- renderPlot({
 
+        word_1 <- input$word1
+        word_2 <- input$word2
+
+        if (word_1 == " " & word_2 == " "){}
+        else if (word_1 == " "){
+            data = filter(word_count, word_count$word == word_2)
+            ggplot(data, aes(x = year, y = count)) +
+                geom_line() +
+                theme(legend.position="bottom") +
+                ggtitle(word_2) +
+                theme(plot.title = element_text(hjust = 0.5)) +
+                xlab("Year") +
+                ylab("Count")
+        }
+        else if (word_2 == " " | word_1 == word_2){
+            data = filter(word_count, word_count$word == word_1)
+            ggplot(data, aes(x = year, y = count)) +
+                geom_line() +
+                theme(legend.position="bottom") +
+                ggtitle(word_1) +
+                theme(plot.title = element_text(hjust = 0.5)) +
+                xlab("Year") +
+                ylab("Count")
+        }
+        else {
+            data = filter(word_count, word_count$word == word_1 | word_count$word == word_2)
+            ggplot(data, aes(x = year, y = count, col = word)) +
+                geom_line() +
+                theme(legend.position="bottom") +
+                ggtitle(paste(word_1,word_2, sep="/")) +
+                theme(plot.title = element_text(hjust = 0.5)) +
+                xlab("Year") +
+                ylab("Count")
+        }
+    })
+
+    output$video <- renderUI({
+        word_1 <- input$word1
+        word_2 <- input$word2
+        if (word_1 == " " & word_2 == " "){
+            HTML(paste0('<iframe width="500" height="300" src="https://www.youtube.com/embed/SHJ1HL4eMLQ", frameborder="0" allowfullscreen></iframe>'))
+        }
+        else{}
+    })
+
+    output$cover_hist <- renderPlot({
+
+        bin_width <- input$binwidth
+        ggplot(cover, aes(year)) +
+            geom_histogram(color = "black", fill = "lightblue", binwidth = bin_width) +
+            theme(legend.position="bottom") +
+            ggtitle("# of Covers over Time") +
+            theme(plot.title = element_text(hjust = 0.5)) +
+            xlab("Year") +
+            ylab("Count")
+    })
     
     ####################
     #Dashboard 3 graphs

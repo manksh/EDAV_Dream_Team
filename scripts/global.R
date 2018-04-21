@@ -126,3 +126,8 @@ if(!require(memoise))
     install.packages('memoise')
     library(memoise)
 }
+if(!require(memisc))
+{
+    install.packages('memisc')
+    library(memisc)
+}
