@@ -8,6 +8,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r}
+
 library(readr)
 library(tidyverse)
 library(ggplot2)
@@ -25,6 +26,8 @@ library(lubridate)
 library(skimr)
 library(plotly)
 library(parcoords)
+library(RColorBrewer)
+source('../scripts/global.R')
 ```
 
 
@@ -98,7 +101,7 @@ From above, we are fortunate to find no significant problems with the numerical 
 ```{r}
 na_years = df %>%
     filter(is.na(acousticness)) %>%
-    select(year)
+    dplyr::select(year)
 ggplot(na_years, aes(x=year)) + geom_histogram(bins=51)
 ```
 
@@ -430,7 +433,7 @@ spotifydf<-spotifydf%>%
     mutate(duration=duration_ms/1000/60)
 
 spotifydf_s <- spotifydf%>%
-                select(keepcols) %>%
+                dplyr::select(keepcols) %>%
                 group_by(year)%>%
                 summarize(mean_acousticness = mean(acousticness),
                         mean_danceability = mean(danceability),
@@ -769,7 +772,7 @@ ggplot(explicit, aes(x = year, y = prop_explicit), fill='black') +
     ylab('Number of explicit songs')
 ```
 
-Shopw some word clouds with explicit words below!!!
+Show some word clouds with explicit words below!!!
 
 
 ```{r, }
@@ -790,8 +793,10 @@ wordcloud(most_explicit_words$word, most_explicit_words$explicit_scale, scale=c(
 wordcloud(most_danceable_words$word, most_danceable_words$danceability_scale, scale=c(1.5, .2), random.order = FALSE, random.color = FALSE, colors= pal)
 wordcloud(most_energetic_words$word, most_energetic_words$energy_scale, scale=c(1.5, .2), random.order = FALSE, random.color = FALSE, colors= pal)
 ```
-```
+
+
 ### Interactivity
+
 For the interactive portion of this analysis, we decided to build a RShiny Dashboard, which is linked here: https://kathyl.shinyapps.io/EDAV_SP18_DreamTeam_FinalProject/
 
 The dashboard has a main menu with four components reflecting on the main topics of our analyses: Artists, Word Clouds, Songs, and Evolution over Time. To hide/minimize this main menu bar, you can click the icon of three bars that's next to DreamTeam Final. We recommend viewing this dashboard in a maximized web browser, and minimizing the main menu bar when viewing contents of each component individually. 
