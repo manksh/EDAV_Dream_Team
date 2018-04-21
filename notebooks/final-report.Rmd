@@ -822,7 +822,7 @@ wordcloud(most_explicit_words$word, most_explicit_words$explicit_scale, scale=c(
 [ Louis' word clouds for most danceable, most energetic, etc. words ]
 ```{r fig.width=2, fig.height=2}
 wordcloud(most_danceable_words$word, most_danceable_words$danceability_scale, scale=c(1.5, .2), random.order = FALSE, random.color = FALSE, colors= pal)
-wordcloud(most_explicit_words$word, most_explicit_words$explicit_scale, scale=c(1.5, .2), random.order = FALSE, random.color = FALSE, colors= pal)
+wordcloud(most_energetic_words$word, most_energetic_words$energy_scale, scale=c(1.5, .2), random.order = FALSE, random.color = FALSE, colors= pal)
 ```
 ```
 ### Conclusion
