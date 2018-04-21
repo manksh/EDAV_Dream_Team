@@ -236,6 +236,19 @@ ggplot(collaborations, aes(x = year, y = num_collaborations)) +
 
 More interesting still is the rising trend in artist collaborations over time that begins during the 1990s and takes off dramatically before plateauing in the late 2000s. Additional comments about this trend are presented in the executive summary.
 
+Number of covers per year:
+```{r}
+bin_width <- 1
+cover <- read.csv("../data/Louis/cover_year.csv")
+ggplot(cover, aes(year)) +
+  geom_histogram(color = "black", fill = "lightblue", binwidth = bin_width) +
+  theme(legend.position="bottom") +
+  ggtitle("Cover") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  xlab("Year") + 
+  ylab("Count")
+```
+
 ```{r}
 nunique_artists_year = df %>% 
                         group_by(year) %>%
@@ -544,8 +557,97 @@ grid.arrange(p2, p1, ncol = 2)
 
 In this subsection, we perform analyses on the words within the lyrics of each song. In particular, given the rich set of features provided by Spotify, we can explore interesting questions such as "what are the most danceable words?" To facilitate such analysis, we [use Python](https://github.com/manksh/EDAV_Dream_Team/blob/master/notebooks/create-tidy-lyrics.ipynb) to tidy our dataset at the word-level. Whereas the original song-level dataset contains one row per song, the word-level dataset contains **one row per unique word per song**. For example, if the word "dance" appears multiple times in a single song, it would be transformed into a single row in the new dataset, but if the word "dance" appears in X songs, it would be transformed into X rows in the dataset. Each row of the word-level dataset inherits all the features of the song it belongs to (year, title, artist, audio features) and contains a new feature "count" indicating the number of times the word appears in that song. Furthermore, only words that appear in at least 10 different songs are included in the new dataset. Otherwise, if we attempt to answer "what are the most danceable words" by averaging the danceability of songs that word appears in, words that appear only in the single most danceable song would dominate such a ranking.
 
+```{r fig.height=3, fig.width=3}
+n_gram <- read.csv("../data/Louis/n_gram.csv")
+pal <- brewer.pal(9, "OrRd")
+pal <- pal[-(1:3)]
+for (i in 0:5){
+n_gram_i <- filter(n_gram, n_gram$decade == 1960+10*i)
+wordcloud(n_gram_i$word, n_gram_i$count, min.freq =3, scale=c(5, .2), random.order = FALSE, random.color = FALSE, colors= pal)}
+```
+Word cloud with most popular unigrams by decade:
+```{r fig.height=3, fig.width=3}
+for (i in 0:5){
+n_gram_i <- filter(n_gram, n_gram$decade == 1960+10*i, n_gram$gram == 'unigram')
+wordcloud(n_gram_i$word, n_gram_i$count, min.freq =3, scale=c(5, .2), random.order = FALSE, random.color = FALSE, colors= pal)}
+```
+
+Word cloud with most popular bigrams by decade:
+```{r fig.height=3, fig.width=3}
+for (i in 0:5){
+n_gram_i <- filter(n_gram, n_gram$decade == 1960+10*i, n_gram$gram == 'bigram')
+wordcloud(n_gram_i$word, n_gram_i$count, min.freq =3, scale=c(5, .2), random.order = FALSE, random.color = FALSE, colors= pal)}
+```
+
+Word cloud with most popular trigrams by decade:
+```{r fig.height=4, fig.width=4}
+for (i in 0:5){
+n_gram_i <- filter(n_gram, n_gram$decade == 1960+10*i, n_gram$gram == 'trigram')
+wordcloud(n_gram_i$word, n_gram_i$count, min.freq =3, scale=c(5, .2), random.order = FALSE, random.color = FALSE, colors= pal)}
+```
+Evolution of word count per year:
 ```{r}
-words = read_csv('../data/tidy-words.csv')
+word_set <- list(list('love', 'like'), list('girl', 'boy'), list('woman', 'man'), list('war', 'peace'))
+word_count <- read.csv("../data/Louis/word_count_per_year.csv")
+for (i in 1:4){
+  word1 <- word_set[[i]][[1]]
+  word2 <- word_set[[i]][[2]]
+  word_filter = filter(word_count, word_count$word == word1 | word_count$word == word2)
+  print(ggplot(word_filter, aes(x = year, y = count, col = word)) +
+  geom_line() +
+  theme(legend.position="bottom") +
+  ggtitle(paste(word1,word2, sep="/")) +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  xlab("Year") + 
+  ylab("Count"))
+}
+```
+```{r, }
+word_df <- read.csv("../data/tidy-words.csv")
+```
+```{r fig.width=3, figh.height=3}
+most_energetic_words = word_df %>%
+                group_by(word) %>%
+                summarize(energy_med = median(energy)) %>%
+                filter(!is.na(energy_med)) %>%
+                top_n(100, energy_med) %>%
+                mutate(energy_scale = (energy_med - min(energy_med))*100/max(energy_med))
+least_energetic_words = word_df %>%
+                group_by(word) %>%
+                summarize(energy_med = median(energy)) %>%
+                filter(!is.na(energy_med)) %>%
+                top_n(100, desc(energy_med)) %>%
+                mutate(energy_scale = 100*(1 - (energy_med - min(energy_med))/max(energy_med)))
+
+wordcloud(most_energetic_words$word, most_energetic_words$energy_scale, scale=c(2, .2), random.order = FALSE, random.color = FALSE, colors= pal)
+wordcloud(least_energetic_words$word, least_energetic_words$energy_scale, scale=c(1, .1), random.order = FALSE, random.color = FALSE, colors= pal)
+```
+```{r fig.width=3, figh.height=3}
+most_danceable_words = word_df %>%
+                group_by(word) %>%
+                summarize(danceability_med = median(danceability)) %>%
+                filter(!is.na(danceability_med)) %>%
+                top_n(100, danceability_med) %>%
+                mutate(danceability_scale = (danceability_med - min(danceability_med))*100/max(danceability_med))
+least_danceable_words = word_df %>%
+                group_by(word) %>%
+                summarize(danceability_med = median(danceability)) %>%
+                filter(!is.na(danceability_med)) %>%
+                top_n(100, desc(danceability_med)) %>%
+                mutate(danceability_scale = 100*(1 - (danceability_med - min(danceability_med))/max(danceability_med)))
+
+wordcloud(most_danceable_words$word, most_danceable_words$danceability_scale, scale=c(2, .2), random.order = FALSE, random.color = FALSE, colors= pal)
+wordcloud(least_danceable_words$word, least_danceable_words$danceability_scale, scale=c(1, .1), random.order = FALSE, random.color = FALSE, colors= pal)
+```
+```{r fig.width=3, figh.height=3}
+most_explicit_words = word_df %>%
+                group_by(word) %>%
+                summarize(explicit_mean = mean(explicit)) %>%
+                filter(!is.na(explicit_mean)) %>%
+                top_n(100, explicit_mean) %>%
+                mutate(explicit_scale = (explicit_mean - min(explicit_mean))*100/max(explicit_mean))
+wordcloud(most_explicit_words$word, most_explicit_words$explicit_scale, scale=c(2, .2), random.order = FALSE, random.color = FALSE, colors= pal)
+
 ```
 
 # Executive Summary
@@ -560,10 +662,23 @@ Our most interesting findings are logged below:
 
 The analysis of the top 100 song lyrics from 1960 to 2014 reveal some interesting insghts. The most common word to appear until ‘year’ is Love, however it’s interesting to see the most common word to change to like in the subsequent years. Google word trends also confirms this fearful observation, according to google, the popularity of the word like in general; overtook the popularity of the word love almost as the same time shown in our plots. We claim that this is because of the word like developing as a filler in many of the sentences and our daily lives and has thus become a ubiquitous word. The popularity of the word in song lyrics is just a stronger assertion that our hypothesis is correct. But don’t worry, love still trumps like ;).
 
-```{r}
-
 # some cool code displaying word clouds
-
+```{r fig.height=3, fig.width=3}
+for (i in list(0,5)){
+n_gram_i <- filter(n_gram, n_gram$decade == 1960+10*i, n_gram$gram == 'unigram')
+wordcloud(n_gram_i$word, n_gram_i$count, min.freq =3, scale=c(5, .2), random.order = FALSE, random.color = FALSE, colors= pal)}
+```
+```{r}
+  word1 <- 'love'
+  word2 <- 'like'
+  word_filter = filter(word_count, word_count$word == word1 | word_count$word == word2)
+  ggplot(word_filter, aes(x = year, y = count, col = word)) +
+    geom_line() +
+    theme(legend.position="bottom") +
+    ggtitle(paste(word1,word2, sep="/")) +
+    theme(plot.title = element_text(hjust = 0.5)) +
+    xlab("Year") + 
+    ylab("Count")
 ```
 
 ### Flash in the pan vs. steady burn
@@ -692,8 +807,9 @@ Shopw some word clouds with explicit words below!!!
 ```{r, }
 
 # TODO 
-
 'can also copy Louisword cloud showing the most explicit words. the fact that "feds/cops" and some other not intrinsically explicit words shows up is fascinating. will need to re-summarize how a words explicitness is calcualted (i.e. re-hash the process for creating "tidy words" dataset'
+wordcloud(most_explicit_words$word, most_explicit_words$explicit_scale, scale=c(2, .2), random.order = FALSE, random.color = FALSE, colors= pal)
+
 
 ```
 
@@ -704,7 +820,11 @@ Shopw some word clouds with explicit words below!!!
 [ Kathy's parallel coordinates plot ]
 
 [ Louis' word clouds for most danceable, most energetic, etc. words ]
-
+```{r fig.width=2, fig.height=2}
+wordcloud(most_danceable_words$word, most_danceable_words$danceability_scale, scale=c(1.5, .2), random.order = FALSE, random.color = FALSE, colors= pal)
+wordcloud(most_explicit_words$word, most_explicit_words$explicit_scale, scale=c(1.5, .2), random.order = FALSE, random.color = FALSE, colors= pal)
+```
+```
 ### Conclusion
 
 This brings us to the end of the project. Well, Almost. We have some interesting interactive visualizations coming up ahead. However, we would like to take some time to reflect on the project and what we learned through the process and how we would have doner some things differently. This is more like a reflection than a Conclusion! we all know, conclusions are boring and we all hate writing them!
