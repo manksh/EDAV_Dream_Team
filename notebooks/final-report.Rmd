@@ -49,7 +49,7 @@ To enable our analysis, we turn to one of the world's most popular streaming mus
 For this analysis, we focus primarily on the US music market and use Billboard's Yearly Top 100 chart as our means of determining the most popular singles for each year. Billboard is a weekly music news magazine that publishes a weekly chart of the top 100 songs sold each week. This weekly chart is considered the industry standard for measuring the success of commercial music and serves as the basis for compiling the Yearly Top 100 chart. This yearly chart starts the first week of December to the last week in November of each year. A single gains points on the yearly chart for each weekly chart it appears on, with a weekly position of 100 yielding a single point and a position of 1 yielding 100 points ([source: billboardtop100of.com](http://billboardtop100of.com/billboard-top-100-year-end-chart/)).
 
 ### Data acquisition
-Because it is not possible to obtain Billboard's chart data and corresponding song lyrics without some form of extensive web scraping, we opted instead to use a [dataset compiled by Kaylin Walker](https://github.com/walkerkq/musiclyrics) consisting of the yearly top 100 singles and their lyrics from 1965-2015. However, our primary data, Spotify's audio features, was accessed directly by querying Spotify's API using the obtained list of top 100 singles, the Python script for which can be found [here](https://github.com/manksh/EDAV_Dream_Team/blob/master/scripts/query-spotify.py). We then merge these features back into the Billboard dataset, as detailed [here](https://github.com/manksh/EDAV_Dream_Team/blob/master/scripts/query-spotify.ipynb).
+Because it is not possible to obtain Billboard's chart data and corresponding song lyrics without some form of extensive web scraping, we opted instead to use a [dataset compiled by Kaylin Walker on May 8, 2016](https://github.com/walkerkq/musiclyrics) consisting of the yearly top 100 singles and their lyrics from 1965-2015. However, our primary data, Spotify's audio features, was accessed directly on February 21, 2018 by querying Spotify's API using the obtained list of top 100 singles, the Python script for which can be found [here](https://github.com/manksh/EDAV_Dream_Team/blob/master/scripts/query-spotify.py). We then merge these features back into the Billboard dataset, as detailed [here](https://github.com/manksh/EDAV_Dream_Team/blob/master/scripts/query-spotify.ipynb).
 
 ```{r}
 df = read_csv('../data/billboard-spotify.csv')
@@ -93,7 +93,7 @@ visna(spotifydf, sort='b')
 
 ```
 
-From above, we are fortunate to find no significant problems with the numerical features (i.e. values with ranges that do not make sense). However, there are 337 songs that have missing values for all Spotify features due to the fact that these songs were queried unsuccessfully. The plot below shows that the missingness of these features is mostly uncorrelated with the year in which the song charted.
+From above, we are fortunate to find no significant problems with the numerical features (i.e. values with ranges that do not make sense). However, there are 337 songs that have missing values for all Spotify features due to the fact that these songs were queried unsuccessfully. The plot below shows that the missingness of these features is mostly uncorrelated with the year in which the song charted (missing not at random).
 
 ```{r}
 na_years = df %>%
@@ -101,6 +101,18 @@ na_years = df %>%
     select(year)
 ggplot(na_years, aes(x=year)) + geom_histogram(bins=51)
 ```
+
+```{r, fig.height=2, fig.width=10}
+instrumentalness_df = df %>%
+  filter(!is.na(instrumentalness)) %>%
+  group_by(is.na(lyrics)) %>%
+  summarize(avg_instrumentalness = mean(instrumentalness, rm.na=TRUE))
+
+colnames(instrumentalness_df) = c('is_na', 'instrumentalness')
+
+ggplot(instrumentalness_df) + geom_col(aes(x=is_na, y=instrumentalness)) + coord_flip()
+```
+Additionally, 250 songs have no lyrics. We suspect that this is due to the songs being instrumental. While we cannot manually check if this is the case for all 250 songs, we can, using Spotify's audio feature "instrumentalness", check the average instrumentalness of songs for which lyrics were available and songs for which they were not available. Indeed, we see that instrumentalness of songs without lyrics is much higher than those with lyrics, suggesting that at least some of the songs with missing lyrics had no lyrics to begin with.
 
 One significant problem we noticed in the lyric text is that some lyrics were not scraped properly; for certain songs, there exists no demarcation between the final word of a line and the first word of the next line, resulting in merged words such as:
 
@@ -283,7 +295,7 @@ This raises a natural question: does there exist a relationship between the numb
 ggplot(top_artists, aes(x = longevity, y = hits_per_year, color = num_singles)) + geom_point(alpha=0.25)
 ```
 
-However, being a "flash in the pan" artist with multiple hit singles over a short span of time might still be preferable to the fates of the majority of charting artists. In the cumulative relative frequency histogram below, we see that over half of all artists only ever generate a single hit, and over 3/4ths of artists ever generate at most 2 hits.
+However, being a "flash in the pan" artist with multiple hit singles over a short span of time might still be preferable to the fates of the majority of charting artists. In the cumulative relative frequency histogram below, we see that over half of all artists are "one hit wonders", only ever generating a single hit, and over 3/4ths of artists ever generate at most 2 hits.
 
 ```{r, fig.height=3, fig.width=10}
 p1 = ggplot(top_artists) + geom_histogram(aes(x=num_singles))
@@ -436,41 +448,13 @@ spotifydf_s <- spotifydf%>%
 spotifydf_s$year<- factor(spotifydf_s$year, levels = unique(spotifydf_s$year))
 
 ggparcoord(spotifydf_s, columns = 2:11, alphaLines = 0.7, groupColumn ='year',scale = 'uniminmax')+xlab("")+ylab("") + theme(axis.text.x = element_text(angle=90))
-
-# custom function to transpose while preserving names
-transpose_df <- function(df) {
-  t_df <- data.table::transpose(df)
-  colnames(t_df) <- rownames(df)
-  rownames(t_df) <- colnames(df)
-  return(t_df)
-}
-
-# using the function
-dft<-transpose_df(spotifydf_s)
-colnames(dft) <- dft[1, ]
-dft <- dft[-1,]
-dft<- dft%>%
-    rownames_to_column('Variable')
-
-ggparcoord(dft, columns = 2:52, alphaLines = 0.7, groupColumn ='Variable',scale = 'uniminmax')+xlab("")+ylab("") + theme(axis.text.x = element_text(angle=90))
 ```
-```{r}
-spotifydf_s$year <- year(as.Date(as.character(spotifydf_s$year), "%Y"))
 
-rownames(spotifydf_s)<- spotifydf_s$year
-p <- spotifydf_s%>% arrange(year) %>%
-    parcoords(
-        rownames = F,
-        brushMode = "1D-axes",
-        reorderable = T,
-        queue = T,
-        alpha=.8,
-        color = list(colorBy = "year", colorScale = htmlwidgets::JS("d3.scale.category10()")),
-        width = 1100,
-        height = 500
-    )
-p
-```
+The parallel coordinates plot above was generated by creating an audio feature profile for each year in which we simply average each audio feature across all songs for each year. In other words, each line represents the average Spotify audio features for that year. We considered using a perceptually uniform color space to denote years, however we found that distinguishing the inner decades under such a scheme to be more difficult, so we stayed with the default. The features have also been re-scaled so that the maximum feature value is 1 and minimum is 0. Some notable observations:
+- Songs from 1966 to 1975 are markedly more acoustic and less danceable than those from later years, which also display a trend of decreasing acousticness over time.
+- Songs from the 1990s seem to have had the longest duration
+- Songs from the most recent decade appear to be among the highest energy, least instrumental, and loudest
+- Songs from the 1980s appear to be much less speechy than from other decades
 
 To examine the correlation structure of the data's continuous features, we create a correlation matrix and visualize it with a heatmap below. Additionally, we arrange the features so that those with the most similar correlations to other features are placed near each other, with the dendrograms on the top and left showing which features are most similar to each other.
 
@@ -658,9 +642,9 @@ Popular music offers a unique lens through which to study how a culture evolves.
 
 Our most interesting findings are logged below:
 
-### Love Conquers all, but unfortunately it’s not forever.
+### Love conquers all, but unfortunately it’s not forever.
 
-The analysis of the top 100 song lyrics from 1960 to 2014 reveal some interesting insghts. The most common word to appear until ‘year’ is Love, however it’s interesting to see the most common word to change to like in the subsequent years. Google word trends also confirms this fearful observation, according to google, the popularity of the word like in general; overtook the popularity of the word love almost as the same time shown in our plots. We claim that this is because of the word like developing as a filler in many of the sentences and our daily lives and has thus become a ubiquitous word. The popularity of the word in song lyrics is just a stronger assertion that our hypothesis is correct. But don’t worry, love still trumps like ;).
+The analysis of the top 100 song lyrics from 1965 to 2015 reveal some interesting insghts. The most common word to appear each year is initially "love", however it’s interesting to see the most common word changes to like in subsequent years. Google word trends also confirms this fearful observation; according to Google, the popularity of the word "like" overtook the popularity of "love" at almost the same time shown in our plots. We claim that this is because of the word like developing as a filler in many of the sentences and our daily lives and has thus become a ubiquitous word in speech and song alike. However, worry not; in our hearts, love still trumps like.
 
 # some cool code displaying word clouds
 ```{r fig.height=3, fig.width=3}
@@ -683,10 +667,9 @@ wordcloud(n_gram_i$word, n_gram_i$count, min.freq =3, scale=c(5, .2), random.ord
 
 ### Flash in the pan vs. steady burn
 
-We seek to see which artists have had the longest careers, defined simply as number of years between an artist’s earliest charting hit and most recent charting hit.. There are some interesting findings summarized below.
+One of the more interesting aspects of the data is that it allows us to see which artists had the greatest longevity of career, defined simply as number of years between an artist’s earliest charting hit and most recent charting hit. A caveat here is that because the latest of any duplicate singles was removed from the dataset, some artists’ career lifespans appear shorter by a year than if duplicates singles had not been removed. We not only observe which artists had the greatest career longevity but also the time period during which an artist was popular, with lighter colors signifying an artist with greater numbers of total hit singles. Curiously, while Madonna and Mariah Carey have charted most frequently in the top 100, several artists, Santana, Cher, The Isley Brothers, Aretha Franklin, etc., have had longer charting careers.
 
-Besides just revealing which artists had the most top 100 hit singles, one of the more interesting aspects of the data is that it allows us to see which artists had the greatest longevity of career. A caveat here is that because the latest of any duplicate singles was removed from the dataset, some artists’ career lifespans appear shorter by a year than if duplicates singles had not been removed. We not only observe which artists had the greatest career longevity but also the time period during which an artist was popular, with lighter colors signifying an artist with greater numbers of total hit singles. Curiously, while Madonna and Mariah Carey have charted most frequently in the top 100, several artists, Santana, Cher, The Isley Brothers, Aretha Franklin, etc., have had longer charting careers.
-This raises a natural question: does there exist a relationship between the number of singles an artist produces per year and their career span? Below, we observe that no artist has produced an average of greater than 2 hit singles a year and achieved a career span exceeding a decade. In fact, all artists generating on avearage more than 2.5 hit singles per year have career spans of less than 5 years, with the most significant “flash in the pan” artists being those that averaged 4 or more hit singles per year.
+
 
 ```{r, fig.width=10, fig.height=8}
 top_artists = df %>%
@@ -698,35 +681,24 @@ top_artists_30 = top_artists[0:30,]
 ggplot(top_artists_30) + geom_segment(aes(x=earliest_hit, xend=latest_hit, y=reorder(artist_base, longevity), yend=reorder(artist_base, longevity), color=num_singles), size=5) + geom_text(aes(x=latest_hit + 3, y=reorder(artist_base, longevity), label=paste(longevity, 'years'))) + ggtitle('Career spans of most timeless artists') + xlab('Year') + ylab('Name of Artist')
 ```
 
-This raises a natural question: does there exist a relationship between the number of singles an artist produces per year and their career span? Below, we observe that no artist has produced an average of greater than 2 hit singles a year and achieved a career span exceeding a decade. In fact, all artists generating on avearage more than 2.5 hit singles per year have career spans of less than 5 years, with the most significant “flash in the pan” artists being those that averaged 4 or more hit singles per year.
+
+This raises a natural question: does there exist a relationship between the number of singles an artist produces per year and their career span? In the left plot below, we observe that no artist has produced an average of greater than 2 hit singles a year and achieved a career span exceeding a decade. In fact, all artists generating on avearage more than 2.5 hit singles per year have career spans of less than 5 years, with the most significant “flash in the pan” artists being those that averaged 4 or more hit singles per year.
 
 ```{r, fig.width=10, fig.height=3}
 p1 = ggplot(top_artists, aes(x = longevity, y = hits_per_year, color = num_singles)) + geom_point(alpha=0.25)
 p2 = ggplot(top_artists) + geom_histogram(aes(x=num_singles, y=cumsum(..count../sum(..count..))), bins=31)
 
 grid.arrange(p1, p2, ncol=2)
-
 ```
 
+However, being a "flash in the pan" artist with multiple hit singles over a short span of time might still be preferable to the fates of the majority of charting artists. In the cumulative relative frequency histogram above and right, we see that over half of all artists are "one hit wonders", only ever generating a single hit, and over 3/4ths of artists ever generate at most 2 hits.
 
 ### Pay attention to me!
 
-The music market has starting to become increasingly competitive with artists trying to vie for the attention of users from all age groups. The rise of streaming services such as spotify and Apple music has made music easily accessible, but also, has exposed people to more types of music genres and thus, it has become harder to capture and keep attention of the users. 
-
-‘The loudness war (or loudness race) refers to the trend of increasing audio levels in recorded music which many critics believe reduces sound quality and listener enjoyment.’[wiki](wikipedia.org/wiki/Loudness_war#1980s)
-
-With the advent of the Compact Disc (CD), music is encoded to a digital format with a clearly defined maximum peak amplitude. Once the maximum amplitude of a CD is reached, loudness can be increased still further through signal processing techniques such as dynamic range compression and equalization. It has been observed and documented that since 1990 that since the 1990’s that artists have adopted the practice of making their songs louder in the hope to make them more popular  and resonate more with the  audience. 
+The music market has become increasingly competitive with artists trying to vie for the attention of users from all age groups. The rise of streaming services such as Spotify and Apple music has made music easily accessible, but also, has exposed people to more types of music genres and thus, it has become harder to capture and keep the attention of listeners 
 
 
 ```{r, fig.width=10, fig.height=5}
-
-
-ggplot(spotifydf) + geom_boxplot(aes(year, loudness, group=year)) +
-    ggtitle("Loudness over Time")+
-    ylab("Loudness ")+
-    scale_x_continuous(breaks = seq(1960,2020,5))
-
-
 
 p1 = ggplot(df, aes(x=energy, y=loudness, color=year)) +
     geom_point(alpha=0.5) +
@@ -739,12 +711,11 @@ p2 = ggplot(df, aes(x=energy, y=loudness)) +
 grid.arrange(p2, p1, ncol = 2)
 ```
 
+Above, we plot the energy and loudness of every single song; on the left, the 6 scatter plots are filtered by decade (i.e. only songs from that decade are plotted), and on the right, we plot all songs together with the year in which it charted shown as a color. In both cases, we observe that both the energy and loudness of songs has been increasing over time, particularly after the 1990s.
 
-It’s interesting to see that we observe similar findings in our data as well. The above plots show the increasing loudness of songs over time especially after the 1990’s. This also lends to the radio becoming more popular.
+This relates directly to a phenomenon known as the "Loudness Wars", which "refers to the trend of increasing audio levels in recorded music." [Wikipedia](wikipedia.org/wiki/Loudness_war#1980s) 
 
-In the first plot above, it is interesting to see the general upward trend of the loudness variavle over time, the variability of loudness is getting low and the mean is gettiung high, it shows that most songs are being made 'loud' and those are the ones that are getting more recognition.
-
-The second plot also shares some interesting insights. We compare energy and loudness by decade. Look closely, the loudness is generally following an increasing trend.   
+With the advent of the Compact Disc (CD), music is encoded to a digital format with a clearly defined maximum peak amplitude. Once the maximum amplitude of a CD is reached, loudness can be increased still further through signal processing techniques such as dynamic range compression and equalization. It has been observed and documented that since the 1990’s, artists have adopted the practice of making their songs louder in the hopes of more successfully catching listeners' attention on the radio. However, this naturally sets off a chain reaction where all artists must follow the same practice lest their songs sound "weaker" by comparison.
 
 
 ```{r, fig.width=10, fig.height=5}
@@ -758,21 +729,18 @@ p2 = ggplot(df, aes(x=instrumentalness, y=duration_min)) +
 grid.arrange(p2, p1, ncol = 2)
 ```
 
-This is not it, there are other factors that confirm our suspicions. Intstrumental music, which by design is not loud is declining in popularity. Song durations are becoming less variable. This is also strongly related to our earlier hypothesis about capturing attention of the audience since they have access to a larger collection of music than ever before and can easily get bored
+Other trends in the data can also be attributed to an increasingly competitive environment for artists. Above, we plot the instrumentalness of each song against its duration in minutes and observe that both the instrumentalness and duration of songs has been declining since the 1970s.
 
-The decline in instrumentalness can be attributed to two causes: 
+That song durations are becoming less variable is strongly related to our earlier hypothesis about the increasing need and difficulty of capturing audience's attention in a world where more music than ever is available at the press of a button.
 
-1) Shorter songs means less time for instruemntal intros or mid-song interludes and instrumental music tends to be longer and thus makes it difficult to catch the users' attention
+The decline in instrumentalness can further be attributed to two causes: 
 
-2) A general decline in instruemntal music, there has been a large decline in instrumental artists and thus music. There is a comprehensive [CNN article](https://www.cnn.com/2016/05/29/opinions/classical-music-dying-and-being-reborn-opinion-albright/index.html) detailing the reasons.
+- Shorter songs means less time for instrumental intros or mid-song interludes.
+- There has been a large decline in instrumental artists and thus music. There is a comprehensive [CNN article](https://www.cnn.com/2016/05/29/opinions/classical-music-dying-and-being-reborn-opinion-albright/index.html) detailing the reasons.
 
 ### Bleep Bleepin' Bleep
 
-Damn.
-
-I'm sure that reference was clear? Well, Kendrick Lamar Just won the [Pulitzer Prize](http://www.pulitzer.org/winners/kendrick-lamar) for music. Its the first time in the history of music that a Rap artist has won the pulitzer prize. 
-
-Rap music has gained increasing pouulartity since the 90's. This [wikipedia article](https://en.wikipedia.org/wiki/Rapping#Golden_age) details the gaining popularity and the reasons for the same. It boils down to how we have changed culturally as a society, things that were once not accepted as a society and now open and Rap music is an example of that. We have culturally evolved from a more orthodox to a more open minded society. Our data again shows hard evidence that this is in fact happening.
+Rap music has gained increasing pouulartity since the 90's. This [wikipedia article](https://en.wikipedia.org/wiki/Rapping#Golden_age) details the gaining popularity and the reasons for the same. It boils down to how we have changed culturally as a society; things that were once not accepted as a society and now open and Rap music is an example of that. We have culturally evolved from a more orthodox to a more open minded society. Our data again shows hard evidence that this is in fact happening.
 
 ```{r, fig.width=10, fig.height=5}
 #Speechiness
@@ -788,7 +756,7 @@ p2 = ggplot(df, aes(x=words_per_sec, y=speechiness)) +
 grid.arrange(p2, p1, ncol = 2)
 ```
 
-There has also been a rise in another feature in music, this may be in part related to the increasing popularity of Rap music as well. Rap music often times contains explicit words and this is perfectlyu visible from the below plot. 
+There has also been a rise in another feature in music, this may be in part related to the increasing popularity of Rap music as well. Rap music often times contains explicit words and this is perfectly visible from the below plot. 
 
 ```{r, }
 explicit = df %>% 
@@ -817,8 +785,6 @@ wordcloud(most_explicit_words$word, most_explicit_words$explicit_scale, scale=c(
 
 ### Odds and ends
 
-[ Kathy's parallel coordinates plot ]
-
 [ Louis' word clouds for most danceable, most energetic, etc. words ]
 ```{r fig.width=2, fig.height=2}
 wordcloud(most_danceable_words$word, most_danceable_words$danceability_scale, scale=c(1.5, .2), random.order = FALSE, random.color = FALSE, colors= pal)
@@ -827,8 +793,9 @@ wordcloud(most_energetic_words$word, most_energetic_words$energy_scale, scale=c(
 ```
 ### Conclusion
 
-This brings us to the end of the project. Well, Almost. We have some interesting interactive visualizations coming up ahead. However, we would like to take some time to reflect on the project and what we learned through the process and how we would have doner some things differently. This is more like a reflection than a Conclusion! we all know, conclusions are boring and we all hate writing them!
+This brings us to the end of the project (with the exception of the interactive visualizations). However, we would like to take some time to reflect on the project and what we learned through the process and how we would have performed some processes differently.
 
-We encountered several problems while doing the project but we came out ahead and gained that in experience. The first major problem with the data was fused words. Word clouds have formed an important part of the project and messy word data was one opf the biggest problem we had. If we had more time would have liked to use an NLP package to tag out of vocabulary words to estimate the extent of the issue. We currently removed these words from the data. 
+We encountered several problems; the first major problem with the data was fused words. Word clouds have formed an important part of the project and messy word data was one of the biggest problems we had. If we had more time would have liked to use an NLP package to tag out of vocabulary words to estimate the extent of the issue. We currently removed these words from the data.
 
-Second, we would have liked to do some more feature engineering on the features and derive and infer some subtle features from the data using the features we already had and see how these imnplicit features ahve changed. For instance,using the tidy words transformation and averaging the audio features by word is a very heuristic method of calculating features like "danceability" for each word. A cooler method would have been to convert each song's lyrics to bag-of-words data and trained multiple linear regressions using the lyrics to predict the song's audio feature (i.e. one regression model for danceability, one regression model for energy, etc.). We could then use the coefficients from the linear regression to tell us what the most and least danceable/energetic/loud/acoustic/etc. Unfimilarity with R as a programming tool and time restrictions were the factors as to why we could not finish these analyses. We leave this as a further exercise to the reader.
+Second, we would have liked to do some more feature engineering on the features and derive and infer some subtle features from the data using the features we already had and see how these imnplicit features have changed. For instance, using the tidy words transformation and averaging the audio features by word is a very heuristic method of calculating features like "danceability" for each word. A better method would have been to convert each song's lyrics to bag-of-words data and trained multiple linear regressions using the lyrics to predict the song's audio feature (i.e. one regression model for danceability, one regression model for energy, etc.). We could then use the coefficients from the linear regression to tell us what the most and least danceable/energetic/loud/acoustic/etc. Unfamiliarity with R as a programming tool and time restrictions were the factors as to why we could omitted these analyses.
+
