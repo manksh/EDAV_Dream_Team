@@ -791,11 +791,26 @@ wordcloud(most_danceable_words$word, most_danceable_words$danceability_scale, sc
 wordcloud(most_energetic_words$word, most_energetic_words$energy_scale, scale=c(1.5, .2), random.order = FALSE, random.color = FALSE, colors= pal)
 ```
 ```
+### Interactivity
+For the interactive portion of this analysis, we decided to build a RShiny Dashboard, which is linked here: https://kathyl.shinyapps.io/EDAV_SP18_DreamTeam_FinalProject/
+
+The dashboard has a main menu with four components reflecting on the main topics of our analyses: Artists, Word Clouds, Songs, and Evolution over Time. To hide/minimize this main menu bar, you can click the icon of three bars that's next to DreamTeam Final. We recommend viewing this dashboard in a maximized web browser, and minimizing the main menu bar when viewing contents of each component individually. 
+
+The Artists tab shows three interesting findings regarding Billboard Top 100 Artists: an artist's lifespan (which we've defined earlier as when they first appeared on the top 100 to when they last appeared), artists who have collaborated the most in their songs / artists who have been the featured artists in songs, and lastly the overall level of collaboration over time. You can view the last graph by clicking on the check box as shown in the side panel. 
+
+The Word Clouds analysis is included as the second item on the main menu panel. As described earlier, we've analyzed the lyrics of the Billboard Top 100 songs from 1965-2015 and found interesting trends with popular words throughout the years. The user has a choice of ngrams, unigrams, bigrams, or trigrams as well as any of the decades in our dataset. It should be noted that the user may have to wait a bit before the word clouds load initially.
+
+The next panel contains our analysis of songs which include word count over time, and number of covers in the Top 100 over time. The user can compare any two words of their choosing from the drop down menu on the sidepanel that they like and observe the behavior over time. The number of covers over time graph is controlled by the slider in the side panel which controls the binwidth of the histogram shown.
+
+Evolution over Time is our last tab. Our dataset contained several variables (defined earlier in our report). And we decided it would be interesting to view the evolution of these variables both individually and grouped over time. The first graph shown is a univariate analysis of each variable. The user can zoom in by highlighting any time period they're interested in. To zoom out, double click. We also included a higher level interactive parallel coordinates plot that will appear once the user clicks the checkbox to allow viewing overall trends and behaviors in groups of variables.
+
+We hope users find this interactive dashboard both engaging and informative!
+
 ### Conclusion
 
-This brings us to the end of the project (with the exception of the interactive visualizations). However, we would like to take some time to reflect on the project and what we learned through the process and how we would have performed some processes differently.
+This brings us to the end of the project. However, we would like to take some time to reflect on the project and what we learned through the process and how we would have performed some processes differently.
 
 We encountered several problems; the first major problem with the data was fused words. Word clouds have formed an important part of the project and messy word data was one of the biggest problems we had. If we had more time would have liked to use an NLP package to tag out of vocabulary words to estimate the extent of the issue. We currently removed these words from the data.
 
-Second, we would have liked to do some more feature engineering on the features and derive and infer some subtle features from the data using the features we already had and see how these imnplicit features have changed. For instance, using the tidy words transformation and averaging the audio features by word is a very heuristic method of calculating features like "danceability" for each word. A better method would have been to convert each song's lyrics to bag-of-words data and trained multiple linear regressions using the lyrics to predict the song's audio feature (i.e. one regression model for danceability, one regression model for energy, etc.). We could then use the coefficients from the linear regression to tell us what the most and least danceable/energetic/loud/acoustic/etc. Unfamiliarity with R as a programming tool and time restrictions were the factors as to why we could omitted these analyses.
+Second, we would have liked to do some more feature engineering on the features and derive and infer some subtle features from the data using the features we already had and see how these implicit features have changed. For instance, using the tidy words transformation and averaging the audio features by word is a very heuristic method of calculating features like "danceability" for each word. A better method would have been to convert each song's lyrics to bag-of-words data and trained multiple linear regressions using the lyrics to predict the song's audio feature (i.e. one regression model for danceability, one regression model for energy, etc.). We could then use the coefficients from the linear regression to tell us what the most and least danceable/energetic/loud/acoustic/etc. Unfamiliarity with R as a programming tool and time restrictions were the factors as to why we could omitted these analyses.
 
