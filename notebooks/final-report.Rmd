@@ -672,8 +672,6 @@ wordcloud(n_gram_i$word, n_gram_i$count, min.freq =3, scale=c(5, .2), random.ord
 
 One of the more interesting aspects of the data is that it allows us to see which artists had the greatest longevity of career, defined simply as number of years between an artist’s earliest charting hit and most recent charting hit. A caveat here is that because the latest of any duplicate singles was removed from the dataset, some artists’ career lifespans appear shorter by a year than if duplicates singles had not been removed. We not only observe which artists had the greatest career longevity but also the time period during which an artist was popular, with lighter colors signifying an artist with greater numbers of total hit singles. Curiously, while Madonna and Mariah Carey have charted most frequently in the top 100, several artists, Santana, Cher, The Isley Brothers, Aretha Franklin, etc., have had longer charting careers.
 
-
-
 ```{r, fig.width=10, fig.height=8}
 top_artists = df %>%
                 group_by(artist_base) %>%
@@ -684,17 +682,16 @@ top_artists_30 = top_artists[0:30,]
 ggplot(top_artists_30) + geom_segment(aes(x=earliest_hit, xend=latest_hit, y=reorder(artist_base, longevity), yend=reorder(artist_base, longevity), color=num_singles), size=5) + geom_text(aes(x=latest_hit + 3, y=reorder(artist_base, longevity), label=paste(longevity, 'years'))) + ggtitle('Career spans of most timeless artists') + xlab('Year') + ylab('Name of Artist')
 ```
 
-
 This raises a natural question: does there exist a relationship between the number of singles an artist produces per year and their career span? In the left plot below, we observe that no artist has produced an average of greater than 2 hit singles a year and achieved a career span exceeding a decade. In fact, all artists generating on avearage more than 2.5 hit singles per year have career spans of less than 5 years, with the most significant “flash in the pan” artists being those that averaged 4 or more hit singles per year.
 
 ```{r, fig.width=10, fig.height=3}
 p1 = ggplot(top_artists, aes(x = longevity, y = hits_per_year, color = num_singles)) + geom_point(alpha=0.25) +ylab('Hits Per Year')
-p2 = ggplot(top_artists) + geom_histogram(aes(x=num_singles, y=cumsum(..count../sum(..count..))), bins=31) + ylab('Cummulative Density')
+p2 = ggplot(top_artists) + geom_histogram(aes(x=num_singles, y=cumsum(..count../sum(..count..))), bins=31) + ylab('Cumulative Density')
 
 grid.arrange(p1, p2, ncol=2)
 ```
 
-However, being a "flash in the pan" artist with multiple hit singles over a short span of time might still be preferable to the fates of the majority of charting artists. In the cumulative relative frequency histogram above and right, we see that over half of all artists are "one hit wonders", only ever generating a single hit, and over 3/4ths of artists ever generate at most 2 hits.
+However, being a "flash in the pan" artist with multiple hit singles over a short span of time might still be preferable to the fates of the majority of charting artists. In the cumulative relative frequency histogram above and right, each bar indicates the proportion of artists with at most **x** hit singles over their entire career. In other words, the leftmost bar shows the proportion of artists with at most one hit single, the next bar the proportion of artists with at most two hit singles, etc. We see that over half of all artists are "one hit wonders", only ever generating a single hit, and over 3/4ths of artists ever generate at most 2 hits.
 
 ### Pay attention to me!
 
@@ -829,20 +826,8 @@ Looking at the most popular words appearing in songs, we found that 'like' has r
 
 We also observed other very interesting evolutions, starting from looking at how 'loudness' of music has become an integral part of music popularity due to the decreasing attention spans of people. We also saw the cultural chanmges in society from looking at the increasing popularity of Rap music and how explicit songs have found a way into our daily lives. 
 
-We encountered several problems; the first major problem with the data was fused words. Fused words was the situation when there exists no demarcation between the final word of a line and the first word of the next line, resulting in fused words.
-
-Word clouds have formed an important part of the project and messy word data was one of the biggest problems we had. If we had more time would have liked to use an NLP package to tag out of vocabulary words to estimate the extent of the issue. We currently removed these words from the data.
+We encountered several problems; the first major problem with the data was fused words. Fused words was the situation when there exists no demarcation between the final word of a line and the first word of the next line, resulting in fused words. Word clouds have formed an important part of the project and messy word data was one of the biggest problems we had. If we had more time would have liked to use an NLP package to tag out of vocabulary words to estimate the extent of the issue. We currently removed these words from the data.
 
 Second, we would have liked to do some more feature engineering on the features and  infer some subtle features from the data using the features we already have and see how these implicit features have changed. For instance, using the tidy words transformation and averaging the audio features by word is a very heuristic method of calculating features like "danceability" for each word. A better method would have been to convert each song's lyrics to bag-of-words data and trained multiple linear regressions using the lyrics to predict the song's audio feature (i.e. one regression model for danceability, one regression model for energy, etc.). We could then use the coefficients from the linear regression to tell us what the most and least danceable/energetic/loud/acoustic/etc. Unfamiliarity with R as a programming tool and time restrictions were the factors as to why we could omitted these analyses.
 
-
-All in all, this project turned out to be a really interesting one and it gave us a thourough knowledge of data visualization and the music industry. We learned about the evolution of the very music we listen to every day and saw how things changed!
-
-
-
-
-
-
-
-
-
+In conclusion, this project turned out to be really interesting and gave us a thourough knowledge of data visualization and the music industry. We gained greater insight about the evolution of the very music we listen to every day and appreciate how the industry has changed.
