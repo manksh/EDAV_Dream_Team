@@ -33,7 +33,7 @@ source('../scripts/global.R')
 
 # Introduction
 ### Team
-- **Manksh Gupta** (mg3835): exporatory data analysis, visualization (static plots), research
+- **Manksh Gupta** (mg3835): exporatory data analysis, visualization (static plots), research, Executive summary
 - **Kathy Lin** (kl2615): exploratory data analysis, visualization (static and Shiny dashboard) 
 - **Louis Massera** (lm3287): exploratory data analysis, visualization (static plots)
 - **Chong Zhao** (cz2470): data processing, exploratory data analysis, visualization (static plots), writing final report
@@ -688,8 +688,8 @@ ggplot(top_artists_30) + geom_segment(aes(x=earliest_hit, xend=latest_hit, y=reo
 This raises a natural question: does there exist a relationship between the number of singles an artist produces per year and their career span? In the left plot below, we observe that no artist has produced an average of greater than 2 hit singles a year and achieved a career span exceeding a decade. In fact, all artists generating on avearage more than 2.5 hit singles per year have career spans of less than 5 years, with the most significant “flash in the pan” artists being those that averaged 4 or more hit singles per year.
 
 ```{r, fig.width=10, fig.height=3}
-p1 = ggplot(top_artists, aes(x = longevity, y = hits_per_year, color = num_singles)) + geom_point(alpha=0.25)
-p2 = ggplot(top_artists) + geom_histogram(aes(x=num_singles, y=cumsum(..count../sum(..count..))), bins=31)
+p1 = ggplot(top_artists, aes(x = longevity, y = hits_per_year, color = num_singles)) + geom_point(alpha=0.25) +ylab('Hits Per Year')
+p2 = ggplot(top_artists) + geom_histogram(aes(x=num_singles, y=cumsum(..count../sum(..count..))), bins=31) + ylab('Cummulative Density')
 
 grid.arrange(p1, p2, ncol=2)
 ```
@@ -709,7 +709,7 @@ p1 = ggplot(df, aes(x=energy, y=loudness, color=year)) +
 
 p2 = ggplot(df, aes(x=energy, y=loudness)) +
     geom_point(alpha=0.15) +
-    facet_wrap(~ decade)
+    facet_wrap(~ decade) 
 
 grid.arrange(p2, p1, ncol = 2)
 ```
@@ -723,11 +723,11 @@ With the advent of the Compact Disc (CD), music is encoded to a digital format w
 
 ```{r, fig.width=10, fig.height=5}
 p1 = ggplot(df, aes(x=instrumentalness, y=duration_min, color=year)) +
-    geom_point(alpha=0.5)
+    geom_point(alpha=0.5) +ylab('Duration(mins)')
 
 p2 = ggplot(df, aes(x=instrumentalness, y=duration_min)) +
     geom_point(alpha=0.15) +
-    facet_wrap(~ decade)
+    facet_wrap(~ decade) +ylab('Duration(mins)')
 
 grid.arrange(p2, p1, ncol = 2)
 ```
@@ -736,14 +736,24 @@ Other trends in the data can also be attributed to an increasingly competitive e
 
 That song durations are becoming less variable is strongly related to our earlier hypothesis about the increasing need and difficulty of capturing audience's attention in a world where more music than ever is available at the press of a button.
 
-The decline in instrumentalness can further be attributed to two causes: 
+The National Endowment for the Arts reported that in 2012, only 8.8% of Americans had attended a classical music performance in the previous 12 months, compared to 11.6% a decade earlier.
 
-- Shorter songs means less time for instrumental intros or mid-song interludes.
-- There has been a large decline in instrumental artists and thus music. There is a comprehensive [CNN article](https://www.cnn.com/2016/05/29/opinions/classical-music-dying-and-being-reborn-opinion-albright/index.html) detailing the reasons.
+Classical music is by construct not very loud in the sense loudness is defined and thus it doesnt catch the modern youths' ear. Also, the shorter attention span of the modern youth tranlsates to shorter songs meaning less time for instrumental intros or mid-song interludes
+
+With a stifling atmosphere of rules and "appropriateness" in classical music concerts,  it gave the youth another reason to be uninterested in the whole idea of classical music. Somehow, classical music has become inaccessible and unwelcoming. There is also a  comprehensive [CNN article](https://www.cnn.com/2016/05/29/opinions/classical-music-dying-and-being-reborn-opinion-albright/index.html) that gives a deeper dive into the topic.
 
 ### Bleep Bleepin' Bleep
 
-Rap music has gained increasing pouulartity since the 90's. This [wikipedia article](https://en.wikipedia.org/wiki/Rapping#Golden_age) details the gaining popularity and the reasons for the same. It boils down to how we have changed culturally as a society; things that were once not accepted as a society and now open and Rap music is an example of that. We have culturally evolved from a more orthodox to a more open minded society. Our data again shows hard evidence that this is in fact happening.
+Our data shows a significant increase in the 'speechiness' of songs over time. Speechiness is defined as the number of words in a sing divided by the length of the songs. Typically, songs that have less 'instrumentalness' and more words tend to be more speechy. This is most popular in the Rap and Hip-Hop genre of music. 
+
+This shows how we have changed culturally as a society; things that were once not accepted as a society and now open and Rap music is an example of that. We have culturally evolved from a more orthodox to a more open minded society. 
+
+This is also elucidated by the fact that a popular Rap artist - Kendrick Lamar, just won the [pulitzer prize](https://www.economist.com/blogs/prospero/2018/04/damn) for music. This is the first time in history that a classic or a jazz musician has not won this piize since it was first announced. 
+
+Rap music also tends to be loud and thus, that may be a secondry reason for its increasing popularity. We see that both loudness and speechiness have gained popularity, however, we do not have enough evidence to posit which one has caused what, its simply a correlation.
+
+This neat [wikipedia article](https://en.wikipedia.org/wiki/Rapping#Golden_age) talks about the rise of Rap music since the 1990's and how it has become a bigger part of our daily lives. 
+
 
 ```{r, fig.width=10, fig.height=5}
 #Speechiness
@@ -752,14 +762,13 @@ ggplot(spotifydf) + geom_boxplot(aes(year, speechiness, group=year)) +
     ylab("Speechiness ")+
     scale_x_continuous(breaks = seq(1960,2020,5))
 
-p2 = ggplot(df, aes(x=words_per_sec, y=speechiness)) +
+ggplot(df, aes(x=words_per_sec, y=speechiness)) +
     geom_point(alpha=0.15) +
     facet_wrap(~ decade)
 
-grid.arrange(p2, p1, ncol = 2)
 ```
 
-There has also been a rise in another feature in music, this may be in part related to the increasing popularity of Rap music as well. Rap music often times contains explicit words and this is perfectly visible from the below plot. 
+There has also been a rise in another feature in music, this may be in part related to the increasing popularity of Rap music as well. 'Explicit' words commonly form a part of the Rap music genre and we have seen a stark rise in explicit songs in the top 100 as well.
 
 ```{r, }
 explicit = df %>% 
@@ -773,7 +782,6 @@ ggplot(explicit, aes(x = year, y = prop_explicit), fill='black') +
 ```
 
 Show some word clouds with explicit words below!!!
-
 
 ```{r, }
 
@@ -815,7 +823,26 @@ We hope users find this interactive dashboard both engaging and informative!
 
 This brings us to the end of the project. However, we would like to take some time to reflect on the project and what we learned through the process and how we would have performed some processes differently.
 
-We encountered several problems; the first major problem with the data was fused words. Word clouds have formed an important part of the project and messy word data was one of the biggest problems we had. If we had more time would have liked to use an NLP package to tag out of vocabulary words to estimate the extent of the issue. We currently removed these words from the data.
+The exploration and visualization process yielded a lot of surprising findings that we didn't expect. We started with a hypothesis that music reflects changes in our society and thus can be a good proxy to see how people's music preferences have evolved over time. 
 
-Second, we would have liked to do some more feature engineering on the features and derive and infer some subtle features from the data using the features we already had and see how these implicit features have changed. For instance, using the tidy words transformation and averaging the audio features by word is a very heuristic method of calculating features like "danceability" for each word. A better method would have been to convert each song's lyrics to bag-of-words data and trained multiple linear regressions using the lyrics to predict the song's audio feature (i.e. one regression model for danceability, one regression model for energy, etc.). We could then use the coefficients from the linear regression to tell us what the most and least danceable/energetic/loud/acoustic/etc. Unfamiliarity with R as a programming tool and time restrictions were the factors as to why we could omitted these analyses.
+Looking at the most popular words appearing in songs, we found that 'like' has replaced 'love' as the most popular word in songs starting from the 2000's. Perhaps an indication of how the meanings of these words have changed in time.
+
+We also observed other very interesting evolutions, starting from looking at how 'loudness' of music has become an integral part of music popularity due to the decreasing attention spans of people. We also saw the cultural chanmges in society from looking at the increasing popularity of Rap music and how explicit songs have found a way into our daily lives. 
+
+We encountered several problems; the first major problem with the data was fused words. Fused words was the situation when there exists no demarcation between the final word of a line and the first word of the next line, resulting in fused words.
+
+Word clouds have formed an important part of the project and messy word data was one of the biggest problems we had. If we had more time would have liked to use an NLP package to tag out of vocabulary words to estimate the extent of the issue. We currently removed these words from the data.
+
+Second, we would have liked to do some more feature engineering on the features and  infer some subtle features from the data using the features we already have and see how these implicit features have changed. For instance, using the tidy words transformation and averaging the audio features by word is a very heuristic method of calculating features like "danceability" for each word. A better method would have been to convert each song's lyrics to bag-of-words data and trained multiple linear regressions using the lyrics to predict the song's audio feature (i.e. one regression model for danceability, one regression model for energy, etc.). We could then use the coefficients from the linear regression to tell us what the most and least danceable/energetic/loud/acoustic/etc. Unfamiliarity with R as a programming tool and time restrictions were the factors as to why we could omitted these analyses.
+
+
+All in all, this project turned out to be a really interesting one and it gave us a thourough knowledge of data visualization and the music industry. We learned about the evolution of the very music we listen to every day and saw how things changed!
+
+
+
+
+
+
+
+
 
