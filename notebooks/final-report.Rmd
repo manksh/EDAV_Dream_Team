@@ -649,7 +649,6 @@ Our most interesting findings are logged below:
 
 The analysis of the top 100 song lyrics from 1965 to 2015 reveal some interesting insghts. The most common word to appear each year is initially "love", however it’s interesting to see the most common word changes to like in subsequent years. Google word trends also confirms this fearful observation; according to Google, the popularity of the word "like" overtook the popularity of "love" at almost the same time shown in our plots. We claim that this is because of the word like developing as a filler in many of the sentences and our daily lives and has thus become a ubiquitous word in speech and song alike. However, worry not; in our hearts, love still trumps like.
 
-# some cool code displaying word clouds
 ```{r fig.height=3, fig.width=3}
 for (i in list(0,5)){
 n_gram_i <- filter(n_gram, n_gram$decade == 1960+10*i, n_gram$gram == 'unigram')
