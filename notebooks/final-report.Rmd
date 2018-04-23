@@ -544,7 +544,7 @@ grid.arrange(p2, p1, ncol = 2)
 
 In this subsection, we perform analyses on the words within the lyrics of each song. In particular, given the rich set of features provided by Spotify, we can explore interesting questions such as "what are the most danceable words?" To facilitate such analysis, we [use Python](https://github.com/manksh/EDAV_Dream_Team/blob/master/notebooks/create-tidy-lyrics.ipynb) to tidy our dataset at the word-level. Whereas the original song-level dataset contains one row per song, the word-level dataset contains **one row per unique word per song**. For example, if the word "dance" appears multiple times in a single song, it would be transformed into a single row in the new dataset, but if the word "dance" appears in X songs, it would be transformed into X rows in the dataset. Each row of the word-level dataset inherits all the features of the song it belongs to (year, title, artist, audio features) and contains a new feature "count" indicating the number of times the word appears in that song. Furthermore, only words that appear in at least 10 different songs are included in the new dataset. Otherwise, if we attempt to answer "what are the most danceable words" by averaging the danceability of songs that word appears in, words that appear only in the single most danceable song would dominate such a ranking.
 
-```{r fig.height=3, fig.width=3}
+```{r fig.height=6, fig.width=6}
 n_gram <- read.csv("../data/Louis/n_gram.csv")
 pal <- brewer.pal(9, "OrRd")
 pal <- pal[-(1:3)]
@@ -552,27 +552,34 @@ for (i in 0:5){
 n_gram_i <- filter(n_gram, n_gram$decade == 1960+10*i)
 wordcloud(n_gram_i$word, n_gram_i$count, min.freq =3, scale=c(5, .2), random.order = FALSE, random.color = FALSE, colors= pal)}
 ```
+
+
 Word cloud with most popular unigrams by decade:
-```{r fig.height=3, fig.width=3}
+
+```{r fig.height=6, fig.width=6}
 for (i in 0:5){
 n_gram_i <- filter(n_gram, n_gram$decade == 1960+10*i, n_gram$gram == 'unigram')
 wordcloud(n_gram_i$word, n_gram_i$count, min.freq =3, scale=c(5, .2), random.order = FALSE, random.color = FALSE, colors= pal)}
 ```
 
 Word cloud with most popular bigrams by decade:
-```{r fig.height=3, fig.width=3}
+
+```{r fig.height=6, fig.width=6}
 for (i in 0:5){
 n_gram_i <- filter(n_gram, n_gram$decade == 1960+10*i, n_gram$gram == 'bigram')
 wordcloud(n_gram_i$word, n_gram_i$count, min.freq =3, scale=c(5, .2), random.order = FALSE, random.color = FALSE, colors= pal)}
 ```
 
 Word cloud with most popular trigrams by decade:
-```{r fig.height=4, fig.width=4}
+
+```{r fig.height=6, fig.width=6}
 for (i in 0:5){
 n_gram_i <- filter(n_gram, n_gram$decade == 1960+10*i, n_gram$gram == 'trigram')
 wordcloud(n_gram_i$word, n_gram_i$count, min.freq =3, scale=c(5, .2), random.order = FALSE, random.color = FALSE, colors= pal)}
 ```
+
 Evolution of word count per year:
+
 ```{r}
 word_set <- list(list('love', 'like'), list('girl', 'boy'), list('woman', 'man'), list('war', 'peace'))
 word_count <- read.csv("../data/Louis/word_count_per_year.csv")
@@ -649,7 +656,7 @@ Our most interesting findings are logged below:
 
 The analysis of the top 100 song lyrics from 1965 to 2015 reveal some interesting insghts. The most common word to appear each year is initially "love", however it’s interesting to see the most common word changes to like in subsequent years. Google word trends also confirms this fearful observation; according to Google, the popularity of the word "like" overtook the popularity of "love" at almost the same time shown in our plots. We claim that this is because of the word like developing as a filler in many of the sentences and our daily lives and has thus become a ubiquitous word in speech and song alike. However, worry not; in our hearts, love still trumps like.
 
-```{r fig.height=3, fig.width=3}
+```{r fig.height=6, fig.width=6}
 for (i in list(0,5)){
 n_gram_i <- filter(n_gram, n_gram$decade == 1960+10*i, n_gram$gram == 'unigram')
 wordcloud(n_gram_i$word, n_gram_i$count, min.freq =3, scale=c(5, .2), random.order = FALSE, random.color = FALSE, colors= pal)}
