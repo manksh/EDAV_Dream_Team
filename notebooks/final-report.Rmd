@@ -793,12 +793,11 @@ ggplot(explicit, aes(x = year, y = prop_explicit), fill='black') +
     ylab('Number of explicit songs')
 ```
 
-Show some word clouds with explicit words below!!!
+Below is an example of the types of words we have observed in the Explicit songs over the years!
 
 ```{r, }
 
-# TODO 
-'can also copy Louisword cloud showing the most explicit words. the fact that "feds/cops" and some other not intrinsically explicit words shows up is fascinating. will need to re-summarize how a words explicitness is calcualted (i.e. re-hash the process for creating "tidy words" dataset'
+
 wordcloud(most_explicit_words$word, most_explicit_words$explicit_scale, scale=c(2, .2), random.order = FALSE, random.color = FALSE, colors= pal)
 
 
@@ -808,7 +807,8 @@ wordcloud(most_explicit_words$word, most_explicit_words$explicit_scale, scale=c(
 
 ### Odds and ends
 
-[ Louis' word clouds for most danceable, most energetic, etc. words ]
+Here are some more interesting observations about what the commonly used words in the music industry are. It's just nice to see what words are being used commonly and to think about if we actually notice them in our daily lives while listening to music!
+
 ```{r fig.width=2, fig.height=2}
 wordcloud(most_danceable_words$word, most_danceable_words$danceability_scale, scale=c(1.5, .2), random.order = FALSE, random.color = FALSE, colors= pal)
 wordcloud(most_energetic_words$word, most_energetic_words$energy_scale, scale=c(1.5, .2), random.order = FALSE, random.color = FALSE, colors= pal)
