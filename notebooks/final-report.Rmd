@@ -547,8 +547,8 @@ grid.arrange(p2, p1, ncol = 2)
 In this subsection, we perform analyses on the words within the lyrics of each song. In particular, given the rich set of features provided by Spotify, we can explore interesting questions such as "what are the most danceable words?" To facilitate such analysis, we [use Python](https://github.com/manksh/EDAV_Dream_Team/blob/master/notebooks/create-tidy-lyrics.ipynb) to tidy our dataset at the word-level. Whereas the original song-level dataset contains one row per song, the word-level dataset contains **one row per unique word per song**. For example, if the word "dance" appears multiple times in a single song, it would be transformed into a single row in the new dataset, but if the word "dance" appears in X songs, it would be transformed into X rows in the dataset. Each row of the word-level dataset inherits all the features of the song it belongs to (year, title, artist, audio features) and contains a new feature "count" indicating the number of times the word appears in that song. Furthermore, only words that appear in at least 10 different songs are included in the new dataset. Otherwise, if we attempt to answer "what are the most danceable words" by averaging the danceability of songs that word appears in, words that appear only in the single most danceable song would dominate such a ranking.
 
 We performed an n-gram analysis of the tidy dataset. Thanks to scikit-learn package (python), we collected the top 100 per count unigrams, bigrams and trigrams per decade (1960s to 2010s). Preprocessing can be found at [here](https://github.com/manksh/EDAV_Dream_Team/blob/master/notebooks/EDAV_project_Louis.ipynb).
-To visualize them, it appeared that building word clouds was the most effective way. We will analize them in the executive summary. 
-Let's start with all our n-gram (unigram, bigram, trigram) by decade:
+To visualize them, it appeared that building word clouds was the most effective way. We will focus on some of them in the executive summary. 
+Let's start with all our n-gram (unigram, bigram, trigram) by decade. We present some thoughts at the end of each plot, but encourage the reader to make their own assessments initially ! We tried to add titles to each plot but wordcloud package does not make it easy, unfortunately. Plots are following a chronological order.
 
 ```{r fig.height=6, fig.width=6}
 n_gram <- read.csv("../data/Louis/n_gram.csv")
@@ -559,7 +559,7 @@ n_gram_i <- filter(n_gram, n_gram$decade == 1960+10*i)
 wordcloud(n_gram_i$word, n_gram_i$count, min.freq =3, scale=c(5, .2), random.order = FALSE, random.color = FALSE, colors= pal)}
 ```
 
-Unigrams are dominant in those clouds, which was expected.
+Most dominant n-grams are realted to feelings, self-expression and rythm ('oh oh', 'oh oh oh'). The wordcloud does not seem to evolve that much with time, except for 'love' and 'like'. We will focus on that in the executive summary. Unigrams are dominant in those clouds, which was expected. 
 Let's focus on them:
 
 ```{r fig.height=6, fig.width=6}
@@ -584,6 +584,8 @@ n_gram_i <- filter(n_gram, n_gram$decade == 1960+10*i, n_gram$gram == 'trigram')
 wordcloud(n_gram_i$word, n_gram_i$count, min.freq =3, scale=c(5, .2), random.order = FALSE, random.color = FALSE, colors= pal)}
 ```
 
+We can see that both most dominant bigrams are trigrams are repetition of the same word, which is usually effective in a song. Over time, we notice that the set of most dominant bigrams and trigrams is getting poorer, putting more and more emphasis on a few of them. Should we see there a delibarate choice from artists that focus on words that were effective in previous billboard songs? Trying to find the magic words to success.
+
 Another aspect of world analysis is the evolution of a word count in the billboard over years. Our interest is dual: to observe if there is any correlation between word counts and society events. On the other hand, to determine if these trends could be useful to decrypt people's attitude evolution over time. Let's look at 4 pair of words: ('love', 'like'), ('girl', 'boy'), ('woman', 'man'),  ('war', 'peace'). Additional analysis will be performed in the executive summary. All preprocessing can be found at:  [here](https://github.com/manksh/EDAV_Dream_Team/blob/master/notebooks/EDAV_project_Louis.ipynb).
 
 ```{r}
@@ -602,6 +604,11 @@ for (i in 1:4){
   ylab("Count"))
 }
 ```
+
+We will focus on love/like in the executive summary. 
+By looking at both girl/boy and woman/man graphs, we can remark that, while girl is more used than boy, woman is less used than man. One may see the result of gender stereotypes in society, leaking in songs by infantilizing woman in the lyrics.
+By looking at war/peace graph, we notice some peaks in the use of war corresponding to US military intervention accross the globe.
+On the Shiny App, feel free to play around with words and compare their evolution.
 
 Working on a word level dataset allowed us to perform audio feature analysis. We focused on energy, danceability and explicitness of words. Results are presented in wordclouds, some of them might be suprising.
 
@@ -652,6 +659,8 @@ most_explicit_words = word_df %>%
 wordcloud(most_explicit_words$word, most_explicit_words$explicit_scale, scale=c(2, .2), random.order = FALSE, random.color = FALSE, colors= pal)
 
 ```
+
+We did not expect to see Louis Vuitton in the most explicit words !
 
 # Executive Summary
 
@@ -795,12 +804,8 @@ ggplot(explicit, aes(x = year, y = prop_explicit), fill='black') +
 
 Below is an example of the types of words we have observed in the Explicit songs over the years!
 
-```{r, }
-
-
+```{r fig.width=6, fig.height=6}
 wordcloud(most_explicit_words$word, most_explicit_words$explicit_scale, scale=c(2, .2), random.order = FALSE, random.color = FALSE, colors= pal)
-
-
 ```
 
 
@@ -809,7 +814,7 @@ wordcloud(most_explicit_words$word, most_explicit_words$explicit_scale, scale=c(
 
 Here are some more interesting observations about what the commonly used words in the music industry are. It's just nice to see what words are being used commonly and to think about if we actually notice them in our daily lives while listening to music!
 
-```{r fig.width=2, fig.height=2}
+```{r fig.width=6, fig.height=6}
 wordcloud(most_danceable_words$word, most_danceable_words$danceability_scale, scale=c(1.5, .2), random.order = FALSE, random.color = FALSE, colors= pal)
 wordcloud(most_energetic_words$word, most_energetic_words$energy_scale, scale=c(1.5, .2), random.order = FALSE, random.color = FALSE, colors= pal)
 ```
