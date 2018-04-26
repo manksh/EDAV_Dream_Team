@@ -35,7 +35,7 @@ source('../scripts/global.R')
 ### Team
 - **Manksh Gupta** (mg3835): exporatory data analysis, visualization (static plots), research, Executive summary
 - **Kathy Lin** (kl2615): exploratory data analysis, visualization (static and Shiny dashboard) 
-- **Louis Massera** (lm3287): exploratory data analysis, visualization (static plots)
+- **Louis Massera** (lm3287): exploratory data analysis, visualization (static plots and Shiny dashboard)
 - **Chong Zhao** (cz2470): data processing, exploratory data analysis, visualization (static plots), writing final report
 
 ### Motivation
@@ -44,8 +44,9 @@ Popular music offers a unique lens through which to study how a culture evolves.
 To enable our analysis, we turn to one of the world's most popular streaming music providers, Spotify, which not only contains a comprehensive catalog of mainstream songs but also a database of proprietary data describing various auditory features of each song. In addition to these auditory features, another rich source of data is the lyrics of the songs themselves, which when combined with Spotify's audio features, paints a vivid portrait of a changing musical landscape. Specifically, we seek to explore questions relating to the following themes:
 
 - **Artists** (most popular, longevity, most explicit, most danceable, most collaborative, etc.)
-- **Words** (most frequent, usage over time, relationship to audio features)
 - **Audio features** (evolution over time)
+- **Words** (most frequent, usage over time, relationship to audio features)
+
 
 # Data description
 
@@ -251,7 +252,6 @@ ggplot(collaborations, aes(x = year, y = num_collaborations)) +
 
 More interesting still is the rising trend in artist collaborations over time that begins during the 1990s and takes off dramatically before plateauing in the late 2000s. Additional comments about this trend are presented in the executive summary.
 
-Number of covers per year:
 ```{r}
 bin_width <- 1
 cover <- read.csv("../data/Louis/cover_year.csv")
@@ -263,6 +263,8 @@ ggplot(cover, aes(year)) +
   xlab("Year") + 
   ylab("Count")
 ```
+
+The histogram above shows the number of covers each year. We define a cover as a song having the same title as a previous song in the dataset. Having removed the duplicates (artist and song comprise a unique pair now) is particularly helpful here. We can see that the number of covers increases over time, showing somehow nostalgia plays an important role in music industry. Reducing the binwidth makes that trend even clearer, we invite you to perform it on the Shiny App. All preprocessing can be found at:  [here](https://github.com/manksh/EDAV_Dream_Team/blob/master/notebooks/EDAV_project_Louis.ipynb).
 
 ```{r}
 nunique_artists_year = df %>% 
@@ -544,6 +546,10 @@ grid.arrange(p2, p1, ncol = 2)
 
 In this subsection, we perform analyses on the words within the lyrics of each song. In particular, given the rich set of features provided by Spotify, we can explore interesting questions such as "what are the most danceable words?" To facilitate such analysis, we [use Python](https://github.com/manksh/EDAV_Dream_Team/blob/master/notebooks/create-tidy-lyrics.ipynb) to tidy our dataset at the word-level. Whereas the original song-level dataset contains one row per song, the word-level dataset contains **one row per unique word per song**. For example, if the word "dance" appears multiple times in a single song, it would be transformed into a single row in the new dataset, but if the word "dance" appears in X songs, it would be transformed into X rows in the dataset. Each row of the word-level dataset inherits all the features of the song it belongs to (year, title, artist, audio features) and contains a new feature "count" indicating the number of times the word appears in that song. Furthermore, only words that appear in at least 10 different songs are included in the new dataset. Otherwise, if we attempt to answer "what are the most danceable words" by averaging the danceability of songs that word appears in, words that appear only in the single most danceable song would dominate such a ranking.
 
+We performed an n-gram analysis of the tidy dataset. Thanks to scikit-learn package (python), we collected the top 100 per count unigrams, bigrams and trigrams per decade (1960s to 2010s). Preprocessing can be found at [here](https://github.com/manksh/EDAV_Dream_Team/blob/master/notebooks/EDAV_project_Louis.ipynb).
+To visualize them, it appeared that building word clouds was the most effective way. We will analize them in the executive summary. 
+Let's start with all our n-gram (unigram, bigram, trigram) by decade:
+
 ```{r fig.height=6, fig.width=6}
 n_gram <- read.csv("../data/Louis/n_gram.csv")
 pal <- brewer.pal(9, "OrRd")
@@ -553,8 +559,8 @@ n_gram_i <- filter(n_gram, n_gram$decade == 1960+10*i)
 wordcloud(n_gram_i$word, n_gram_i$count, min.freq =3, scale=c(5, .2), random.order = FALSE, random.color = FALSE, colors= pal)}
 ```
 
-
-Word cloud with most popular unigrams by decade:
+Unigrams are dominant in those clouds, which was expected.
+Let's focus on them:
 
 ```{r fig.height=6, fig.width=6}
 for (i in 0:5){
@@ -562,7 +568,7 @@ n_gram_i <- filter(n_gram, n_gram$decade == 1960+10*i, n_gram$gram == 'unigram')
 wordcloud(n_gram_i$word, n_gram_i$count, min.freq =3, scale=c(5, .2), random.order = FALSE, random.color = FALSE, colors= pal)}
 ```
 
-Word cloud with most popular bigrams by decade:
+Let's have a look on bigrams only:
 
 ```{r fig.height=6, fig.width=6}
 for (i in 0:5){
@@ -570,7 +576,7 @@ n_gram_i <- filter(n_gram, n_gram$decade == 1960+10*i, n_gram$gram == 'bigram')
 wordcloud(n_gram_i$word, n_gram_i$count, min.freq =3, scale=c(5, .2), random.order = FALSE, random.color = FALSE, colors= pal)}
 ```
 
-Word cloud with most popular trigrams by decade:
+Finally trigrams:
 
 ```{r fig.height=6, fig.width=6}
 for (i in 0:5){
@@ -578,7 +584,7 @@ n_gram_i <- filter(n_gram, n_gram$decade == 1960+10*i, n_gram$gram == 'trigram')
 wordcloud(n_gram_i$word, n_gram_i$count, min.freq =3, scale=c(5, .2), random.order = FALSE, random.color = FALSE, colors= pal)}
 ```
 
-Evolution of word count per year:
+Another aspect of world analysis is the evolution of a word count in the billboard over years. Our interest is dual: to observe if there is any correlation between word counts and society events. On the other hand, to determine if these trends could be useful to decrypt people's attitude evolution over time. Let's look at 4 pair of words: ('love', 'like'), ('girl', 'boy'), ('woman', 'man'),  ('war', 'peace'). Additional analysis will be performed in the executive summary. All preprocessing can be found at:  [here](https://github.com/manksh/EDAV_Dream_Team/blob/master/notebooks/EDAV_project_Louis.ipynb).
 
 ```{r}
 word_set <- list(list('love', 'like'), list('girl', 'boy'), list('woman', 'man'), list('war', 'peace'))
@@ -596,6 +602,9 @@ for (i in 1:4){
   ylab("Count"))
 }
 ```
+
+Working on a word level dataset allowed us to perform audio feature analysis. We focused on energy, danceability and explicitness of words. Results are presented in wordclouds, some of them might be suprising.
+
 ```{r, }
 word_df <- read.csv("../data/tidy-words.csv")
 ```
