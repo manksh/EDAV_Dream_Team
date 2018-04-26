@@ -548,7 +548,9 @@ In this subsection, we perform analyses on the words within the lyrics of each s
 
 We performed an n-gram analysis of the tidy dataset. Thanks to scikit-learn package (python), we collected the top 100 per count unigrams, bigrams and trigrams per decade (1960s to 2010s). Preprocessing can be found at [here](https://github.com/manksh/EDAV_Dream_Team/blob/master/notebooks/EDAV_project_Louis.ipynb).
 To visualize them, it appeared that building word clouds was the most effective way. We will focus on some of them in the executive summary. 
-Let's start with all our n-gram (unigram, bigram, trigram) by decade. We present some thoughts at the end of each plot, but encourage the reader to make their own assessments initially ! We tried to add titles to each plot but wordcloud package does not make it easy, unfortunately. Plots are following a chronological order.
+Let's start with all our n-gram (unigram, bigram, trigram) by decade. We present some thoughts at the end of each plot, but encourage the reader to make their own assessments initially. We tried to add titles to each plot indicating which decade each wordcloud is visualizing, but the wordcloud package makes it quite cumbersome, unfortunately, and we were not able to accomplish this. Each sequence of wordclouds is arranged in chronological order by decade.
+
+We begin first with wordclouds for unigrams, bigrams, and trigrams combined, arranged by decade starting from 1960s and concluding in 2010s.
 
 ```{r fig.height=6, fig.width=6}
 n_gram <- read.csv("../data/Louis/n_gram.csv")
@@ -559,8 +561,8 @@ n_gram_i <- filter(n_gram, n_gram$decade == 1960+10*i)
 wordcloud(n_gram_i$word, n_gram_i$count, min.freq =3, scale=c(5, .2), random.order = FALSE, random.color = FALSE, colors= pal)}
 ```
 
-Most dominant n-grams are realted to feelings, self-expression and rythm ('oh oh', 'oh oh oh'). The wordcloud does not seem to evolve that much with time, except for 'love' and 'like'. We will focus on that in the executive summary. Unigrams are dominant in those clouds, which was expected. 
-Let's focus on them:
+Most dominant n-grams are related to feelings, self-expression and rhythm ('oh oh', 'oh oh oh'). The wordcloud does not seem to evolve that much with time, except for 'love' and 'like'. We will focus on that in the executive summary. Unigrams are dominant in those clouds, which was expected. 
+Let's focus on them for each decade:
 
 ```{r fig.height=6, fig.width=6}
 for (i in 0:5){
@@ -622,16 +624,10 @@ most_energetic_words = word_df %>%
                 filter(!is.na(energy_med)) %>%
                 top_n(100, energy_med) %>%
                 mutate(energy_scale = (energy_med - min(energy_med))*100/max(energy_med))
-least_energetic_words = word_df %>%
-                group_by(word) %>%
-                summarize(energy_med = median(energy)) %>%
-                filter(!is.na(energy_med)) %>%
-                top_n(100, desc(energy_med)) %>%
-                mutate(energy_scale = 100*(1 - (energy_med - min(energy_med))/max(energy_med)))
 
 wordcloud(most_energetic_words$word, most_energetic_words$energy_scale, scale=c(2, .2), random.order = FALSE, random.color = FALSE, colors= pal)
-wordcloud(least_energetic_words$word, least_energetic_words$energy_scale, scale=c(1, .1), random.order = FALSE, random.color = FALSE, colors= pal)
 ```
+
 ```{r fig.width=6, figh.height=6}
 most_danceable_words = word_df %>%
                 group_by(word) %>%
@@ -639,15 +635,8 @@ most_danceable_words = word_df %>%
                 filter(!is.na(danceability_med)) %>%
                 top_n(100, danceability_med) %>%
                 mutate(danceability_scale = (danceability_med - min(danceability_med))*100/max(danceability_med))
-least_danceable_words = word_df %>%
-                group_by(word) %>%
-                summarize(danceability_med = median(danceability)) %>%
-                filter(!is.na(danceability_med)) %>%
-                top_n(100, desc(danceability_med)) %>%
-                mutate(danceability_scale = 100*(1 - (danceability_med - min(danceability_med))/max(danceability_med)))
 
 wordcloud(most_danceable_words$word, most_danceable_words$danceability_scale, scale=c(2, .2), random.order = FALSE, random.color = FALSE, colors= pal)
-wordcloud(least_danceable_words$word, least_danceable_words$danceability_scale, scale=c(1, .1), random.order = FALSE, random.color = FALSE, colors= pal)
 ```
 ```{r fig.width=6, figh.height=6}
 most_explicit_words = word_df %>%
@@ -660,7 +649,7 @@ wordcloud(most_explicit_words$word, most_explicit_words$explicit_scale, scale=c(
 
 ```
 
-We did not expect to see Louis Vuitton in the most explicit words !
+The most unexpected results revolved around the most explicit words; we did not expect to see "Louis Vuitton", "blunt(s)", or "squad" in the most explicit words. While these words may not be intrinsically explicit, because they appear often in songs that are explicit, they co-occur frequently with explicit words. Also of note is that many of the most danceable words, namely "titties" and "naughty" seem like they could also co-occur frequently with explicit words, suggesting an avenue for future analysis: the overlap between danceability and explicitness. 
 
 # Executive Summary
 
